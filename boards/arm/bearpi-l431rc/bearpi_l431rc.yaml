@@ -1,0 +1,16 @@
+identifier: bearpi_l431rc
+name: HW BearPi L431RC
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+ram: 64
+flash: 256
+supported:
+  - nvs
+  - pwm
+  - can
+  - counter
+  - spi

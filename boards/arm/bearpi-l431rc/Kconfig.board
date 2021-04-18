@@ -1,0 +1,9 @@
+# STM32L431RC BearPi board configuration
+
+# Copyright (c) 2016 Open-RnD Sp. z o.o.
+# Copyright (c) 2016 BayLibre, SAS
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_BEARPI_L431RC
+	bool "HW L431RC Development Board"
+	depends on SOC_STM32L431XX

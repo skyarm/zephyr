@@ -1,0 +1,12 @@
+# STM32L432KC Nucleo board configuration
+
+# Copyright (c) 2016 Open-RnD Sp. z o.o.
+# Copyright (c) 2016 BayLibre, SAS
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_BEARPI_L431RC
+
+config BOARD
+	default "bearpi_l431rc"
+
+endif # BOARD_BEARPI_L431RC

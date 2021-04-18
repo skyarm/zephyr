@@ -1,0 +1,12 @@
+# ST7789V2 display driver configuration options
+
+# Copyright (c) 2019 Marc Reilly <marc@cpdesign.com.au>
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig ST7789V2
+	bool "ST7789V2 display driver"
+	depends on SPI
+	help
+	  Enable driver for ST7789V2 display driver.
+
+endchoice
