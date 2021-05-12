@@ -1,0 +1,169 @@
+/*
+ * Copyright (c) 2017 Linaro Limited
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/l4/stm32l496Xg.dtsi>
+#include <st/l4/stm32l496agixp-pinctrl.dtsi>
+
+/ {
+	model = "ST STM32L496AG-DISCO board";
+	compatible = "st,stm32l496ag-disco";
+
+	chosen {
+		zephyr,console = &usart2;
+		zephyr,shell-uart = &usart2;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		green_led_2: led_2 {
+			gpios = <&gpiob 13 GPIO_ACTIVE_HIGH>;
+			label = "LED_1";
+		};
+		green_led_3: led_3 {
+			gpios = <&gpioa 5 GPIO_ACTIVE_LOW>;
+			label = "LED_2";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		joy_sel: joystick_select {
+			label = "JOY_SEL";
+			gpios = <&gpioc 13 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		};
+		joy_down: joystick_down {
+			label = "JOY_DOWN";
+			gpios = <&gpioi 10 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		};
+		joy_up: joystick_up {
+			label = "JOY_UP";
+			gpios = <&gpioi 8 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		};
+		joy_left: joystick_left {
+			label = "JOY_LEFT";
+			gpios = <&gpioi 9 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		};
+		joy_right: joystick_right {
+			label = "JOY_RIGHT";
+			gpios = <&gpiof 11 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		};
+	};
+
+	fstab {
+		compatible = "zephyr,fstab";
+		lfs0: littlefs {
+			compatible = "zephyr,fstab,littlefs";
+			mount-point = "/qspi";
+			partition = <&qspi_part0>;
+			automount;
+			read-size = <16>;
+			prog-size = <16>;
+			cache-size = <64>;
+			lookahead-size = <32>;
+			block-cycles = <512>;
+		};
+	};
+
+	aliases {
+		led0 = &green_led_2;
+		led1 = &green_led_3;
+		sw0 = &joy_sel;
+		sw1 = &joy_down;
+		sw2 = &joy_right;
+		sw3 = &joy_up;
+		sw4 = &joy_left;
+	};
+};
+
+&spi1 {
+	pinctrl-0 = <&spi1_sck_pa5 &spi1_miso_pb4 
+		&spi1_mosi_pb5 &spi1_nss_pa15>;
+	status = "okay";
+};
+
+
+&sdmmc1 {
+	pinctrl-0 = <&sdmmc1_d0_pc8 &sdmmc1_d1_pc9
+		&sdmmc1_d2_pc10 &sdmmc1_d3_pc11
+		&sdmmc1_ck_pc12 &sdmmc1_cmd_pd2>;
+	/*
+	cd-gpios = <&gpiob 15 GPIO_ACTIVE_LOW>;
+	*/
+	status = "okay";
+};
+
+&quadspi {
+	pinctrl-0 = <&quadspi_clk_pb10 &quadspi_bk1_ncs_pb11
+							 &quadspi_bk1_io0_pb1 &quadspi_bk1_io1_pb0
+							 &quadspi_bk1_io2_pa7 &quadspi_bk1_io3_pa6>;
+	/*
+	dmas = <&dma1 1 3 0 0x03>;
+	dma-names = "tx_rx";
+	*/
+
+	status = "okay";
+
+	mx25r6435fm2il0: qspi-nor-flash@0 {
+		compatible = "st,stm32-qspi-nor";
+		label = "MX25R6435FM2IL0";
+		reg = <0>;
+		qspi-max-frequency = <40000000>;
+			/* 64 Megabits = 8 Megabytes */
+		size = <0x4000000>;
+		status = "okay";
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			qspi_part0: partition@0 {
+				label = "QSPI_PART_0";
+				reg = <0x00000000 DT_SIZE_M(8)>;
+			};
+		};
+	};	
+};
+
+&usart1 {
+	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pg10>;
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&usart2 {
+	pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pd6>;
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&lpuart1 {
+	pinctrl-0 = <&lpuart1_tx_pg7 &lpuart1_rx_pg8>;
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&timers2 {
+	status = "okay";
+
+	pwm2: pwm {
+		pinctrl-0 = <&tim2_ch1_pa0>;
+		status = "okay";
+	};
+};
+
+&i2c1 {
+	pinctrl-0 = <&i2c1_scl_pb8 &i2c1_sda_pb7>;
+	clock-frequency = <I2C_BITRATE_FAST>;
+	status = "okay";
+};
+
+&rtc {
+	status = "okay";
+};

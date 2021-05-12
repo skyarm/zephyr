@@ -1,0 +1,17 @@
+identifier: disco_l496ag
+name: Skyarm Disco L496AG
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+ram: 320
+flash: 1024
+supported:
+  - nvs
+  - pwm
+  - i2c
+  - spi
+  - gpio
+  - counter
