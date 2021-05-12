@@ -1,0 +1,53 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "bootstrap",
+            "type": "shell",
+            "command": "cmake -GNinja -B build",
+            "problemMatcher": []
+        },
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "ninja -C build",
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "pristine",
+            "type": "shell",
+            "command": "ninja pristine -C build",
+            "problemMatcher": []
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "ninja pristine -C build",
+            "problemMatcher": []
+        },
+        {
+            "label": "flash",
+            "type": "shell",
+            "command": "ninja flash -C build",
+            "problemMatcher": []
+        },
+        {
+            "label": "debug",
+            "type": "shell",
+            "command": "openocd -f interface/stlink.cfg -f target/stm32l4x.cfg",
+            "problemMatcher": []
+        },
+        {
+            "label": "terminal",
+            "type": "shell",
+            "command": "pyterm -p '/dev/tty.usbmodem103' -b '115200'",
+            "problemMatcher": []
+        }
+    ]
+}
