@@ -1,2 +1,0 @@
-"DTS_ROOT":"/usr/local/src/zephyros/modules/hal/stm32"
-"DTS_ROOT":"/usr/local/src/zephyros/modules/hal/nxp"

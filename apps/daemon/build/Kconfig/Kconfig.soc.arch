@@ -1,2 +1,0 @@
-osource "/usr/local/src/zephyros/zephyr/soc/$(ARCH)/Kconfig"
-osource "/usr/local/src/zephyros/zephyr/soc/$(ARCH)/*/Kconfig"
