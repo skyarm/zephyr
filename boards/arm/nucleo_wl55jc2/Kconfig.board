@@ -1,0 +1,20 @@
+# STM32WL55JC Nucleo board configuration
+
+# Copyright (c) 2020 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_NUCLEO_WL55JC2_CM0
+	bool "Nucleo WL55JC2 Development Board with M0PLUS Core"
+	depends on SOC_STM32WL55XX
+	select CPU_CORTEX_M0PLUS
+    select USE_STM32_HAL_GPIO
+    select USE_STM32_HAL_SUBGHZ
+    select USE_STM32_HAL_CORTEX
+    select PM
+
+config BOARD_NUCLEO_WL55JC2_CM4
+	bool "Nucleo WL55JC2 Development Board with M4 Core"
+	depends on SOC_STM32WL55XX
+	select CPU_CORTEX_M4
+	select USE_STM32_HAL_CORTEX
+	select USE_STM32_HAL_PWR_EX

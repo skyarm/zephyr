@@ -1,0 +1,3 @@
+daemon:
+  description: Nucleo application
+  name: daemon

@@ -1,0 +1,29 @@
+# Available runners configured by board.cmake.
+runners:
+- openocd
+
+# Default flash runner if --runner is not given.
+flash-runner: openocd
+
+# Default debug runner if --runner is not given.
+debug-runner: openocd
+
+# Common runner configuration values.
+config:
+  board_dir: /Users/zhangtao/Projects/zephyr/boards/arm/nucleo_wl55jc2
+  # Build outputs:
+  elf_file: zephyr.elf
+  hex_file: zephyr.hex
+  bin_file: zephyr.bin
+  # Host tools:
+  gdb: /usr/local/bin/arm-none-eabi-gdb
+  openocd: /usr/local/bin/openocd
+
+# Runner specific arguments
+args:
+  openocd:
+    - --cmd-load
+    - flash write_image erase
+    - --cmd-verify
+    - verify_image
+    - --config=/Users/zhangtao/Projects/zephyr/boards/arm/nucleo_wl55jc2/support/openocd_nucleo_wl55jc2_m0.cfg

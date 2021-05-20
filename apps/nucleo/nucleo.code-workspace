@@ -1,0 +1,61 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../boards/arm/nucleo_wl55jc2"
+		}
+	],
+	"settings": {
+		"C_Cpp.default.includePath": [
+			"/usr/local/src/zephyros/zephyr/include",
+			"/usr/local/src/zephyros/zephyr/include/arch",
+			"/usr/local/src/zephyros/zephyr/include/arch/arm/aarch32",
+			"/usr/local/src/zephyros/zephyr/soc/arm/st_stm32/stm32wl",
+			"/usr/local/src/zephyros/zephyr/soc/arm/st_stm32/common",
+			"/usr/local/src/zephyros/zephyr/subsys/testsuite/ztest/include",
+			"/usr/local/src/zephyros/zephyr/subsys/testsuite/ztest/include/syscalls",
+			"/usr/local/src/zephyros/modules/hal/cmsis/CMSIS/Core/Include",
+			"/usr/local/src/zephyros/modules/hal/stm32/stm32cube/common_ll/include", 
+			"/usr/local/src/zephyros/modules/hal/stm32/stm32cube/stm32wlxx/drivers/include",
+			"/usr/local/src/zephyros/modules/hal/stm32/stm32cube/stm32wlxx/soc",
+			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/build/zephyr/include/generated",
+			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/config",
+			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/crypto",
+			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/radio",
+			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/mac",
+			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/mac/Region",
+			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/lmh",
+			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/lmh/Packages"
+		],
+		"C_Cpp.default.defines": [],
+		"C_Cpp.default.compilerArgs": [
+			"-include '/Users/zhangtao/Projects/zephyr/nucleo/cm4/build/zephyr/include/generated/autoconf.h"
+		],
+		"C_Cpp.default.compilerPath": "/usr/local/bin/arm-none-eabi-gcc",
+		"C_Cpp.default.intelliSenseMode": "macos-gcc-arm",
+		"C_Cpp.default.cStandard": "c17",
+		"C_Cpp.default.cppStandard": "c++20",
+		"files.associations": {
+			"Makefile.dep": "makefile",
+			"Makefile.features": "makefile",
+			"Makefile.ci": "makefile",
+			"Makefile.include": "makefile",
+			"wscript": "python",
+			"log.h": "c",
+			"log_core.h": "c",
+			"log_msg.h": "c",
+			"log_msg2.h": "c",
+			"syscall.h": "c",
+			"device.h": "c",
+			"init.h": "c",
+			"kernel.h": "c",
+			"kernel_includes.h": "c",
+			"cpu.h": "c",
+			"arch.h": "c",
+			"devicetree.h": "c",
+			"nvmctxmgmt.h": "c"
+		},
+	}
+}

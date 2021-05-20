@@ -1,0 +1,15 @@
+identifier: nucleo_wl55jc2
+name: ST Nucleo WL55JC2
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+ram: 64
+flash: 256
+supported:
+  - gpio
+  - i2c
+  - spi
+  - subghz

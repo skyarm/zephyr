@@ -1,0 +1,36 @@
+menu "hal_nordic (/usr/local/src/zephyros/modules/hal/nordic)"
+osource "$(ZEPHYR_HAL_NORDIC_KCONFIG)"
+config ZEPHYR_HAL_NORDIC_MODULE
+	bool
+	default y
+endmenu
+menu "sof (/usr/local/src/zephyros/modules/audio/sof)"
+osource "/usr/local/src/zephyros/modules/audio/sof/zephyr/Kconfig"
+config ZEPHYR_SOF_MODULE
+	bool
+	default y
+endmenu
+menu "trusted-firmware-m (/usr/local/src/zephyros/modules/tee/tfm)"
+osource "$(ZEPHYR_TRUSTED_FIRMWARE_M_KCONFIG)"
+config ZEPHYR_TRUSTED_FIRMWARE_M_MODULE
+	bool
+	default y
+endmenu
+menu "nanopb (/usr/local/src/zephyros/modules/lib/nanopb)"
+osource "$(ZEPHYR_NANOPB_KCONFIG)"
+config ZEPHYR_NANOPB_MODULE
+	bool
+	default y
+endmenu
+menu "tensorflow (/usr/local/src/zephyros/modules/lib/tensorflow)"
+osource "$(ZEPHYR_TENSORFLOW_KCONFIG)"
+config ZEPHYR_TENSORFLOW_MODULE
+	bool
+	default y
+endmenu
+menu "ipm (/Users/zhangtao/Projects/zephyr/drivers/ipm)"
+osource "/Users/zhangtao/Projects/zephyr/drivers/ipm/Kconfig"
+config ZEPHYR_IPM_MODULE
+	bool
+	default y
+endmenu

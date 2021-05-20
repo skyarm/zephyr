@@ -1,0 +1,18 @@
+# ST7789V2 display driver configuration options
+
+# Copyright (c) 2019 Marc Reilly <marc@cpdesign.com.au>
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig IPM_STM32_IPCC2
+	bool "STM32 IPCC IPM driver"
+	help
+	  Enable ipm driver for stm32 ipcc.
+	
+if IPM_STM32_IPCC2
+	config IPM_STM32_IPCC2_PROCID
+    	int "STM32 IPCC Processor ID"
+        default 1
+        range 1 2
+        help
+			use to define the Processor ID for IPCC access
+endif
