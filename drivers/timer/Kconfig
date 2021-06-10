@@ -1,0 +1,30 @@
+# ST7789V2 display driver configuration options
+
+# Copyright (c) 2019 Marc Reilly <marc@cpdesign.com.au>
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig STM32_RTC_TIMER
+	bool "STM32 Low Power Timer [EXPERIMENTAL]"
+        depends on (SOC_SERIES_STM32L4X || SOC_SERIES_STM32L5X || SOC_SERIES_STM32WBX || SOC_SERIES_STM32WLX)
+        depends on CLOCK_CONTROL && PM
+        select TICKLESS_CAPABLE
+        help
+          This module implements a kernel device driver for the LowPower Timer
+          and provides the standard "system clock driver" interfaces.
+	
+if STM32_RTC_TIMER
+choice STM32_RTC_CLOCK
+        prompt "LPTIM clock value configuration"
+
+config STM32_RTC_CLOCK_LSE
+        bool "LSE"
+        help
+          Use LSE as RTC clock
+
+config STM32_RTC_CLOCK_LSI
+        bool "LSI"
+        help
+          Use LSI as RTC clock
+endchoice
+
+endif
