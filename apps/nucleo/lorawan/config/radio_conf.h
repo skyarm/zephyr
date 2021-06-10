@@ -31,6 +31,7 @@ extern "C"
 #include <drivers/gpio.h>
 #include <stdio.h>
 
+#include <stm32_ll_utils.h>
 #include "subghz.h"
 #include "timer.h"
 #include "utilities.h"
@@ -76,7 +77,7 @@ extern "C"
 /**
   * @brief Delay interface to radio Middleware
   */
-#define RADIO_DELAY_MS(ms) k_msleep(ms);
+#define RADIO_DELAY_MS(ms) k_msleep(ms)
 
 
 #define RADIO_MEMSET8(d, v, s) UTIL_MEM_set_8(d, v, s)

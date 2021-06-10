@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <arm/armv6-m.dtsi>
+#include <arm/armv7-m.dtsi>
 #include <dt-bindings/clock/stm32_clock.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/i2c/i2c.h>
@@ -99,28 +99,6 @@
 			reg = <0x58000000 0x400>;
 			label = "STM32_CLK_RCC";
 		};
-
-		rtc: rtc@40002800 {
-                        compatible = "st,stm32-rtc";
-                        reg = <0x40002800 0x400>;
-                        interrupts = <42 0>;
-                        clocks = <&rcc STM32_CLOCK_BUS_APB1 0x10000000>;
-                        prescaler = <32768>;
-                        status = "disabled";
-                        label = "RTC_0";
-                };
-
-		lptim1: timers@40007c00 {
-                        compatible = "st,stm32-lptim";
-                        clocks = <&rcc STM32_CLOCK_BUS_APB1 0x48000000>;
-                        #address-cells = <1>;
-                        #size-cells = <0>;
-                        reg = <0x40007c00 0x400>;
-                        interrupts = <39 0>;
-                        interrupt-names = "wakeup";
-                        status = "disabled";
-                        label = "LPTIM_1";
-                };  
 
 		exti: interrupt-controller@58000800 {
 			compatible = "st,stm32-exti";
@@ -244,3 +222,6 @@
 	};
 };
 
+&nvic {
+	arm,num-irq-priority-bits = <4>;
+};

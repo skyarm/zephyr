@@ -28,7 +28,6 @@
  *
  * \author    Daniel Jaeckle ( STACKFORCE )
  */
-
 #include <math.h>
 #include "utilities.h"
 #include "secure-element.h"
@@ -1030,7 +1029,10 @@ static void LoRaMacClassBProcessMulticastSlot( void )
     static RxConfigParams_t multicastSlotRxConfig;
     TimerTime_t multicastSlotTime = 0;
     TimerTime_t slotTime = 0;
+    /* FIXXME:
     MulticastCtx_t *cur = Ctx.LoRaMacClassBParams.MulticastChannels;
+    */
+   MulticastCtx_t *cur = NULL;
 
 
     if( cur == NULL )

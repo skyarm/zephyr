@@ -12,4 +12,7 @@ supported:
   - gpio
   - i2c
   - spi
+  - rtc
+  - pm
+  - lptim
   - subghz

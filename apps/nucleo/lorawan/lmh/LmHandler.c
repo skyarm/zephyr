@@ -33,6 +33,7 @@
   ******************************************************************************
   */
 /* Includes ------------------------------------------------------------------*/
+#include <logging/log.h>
 #include "secure-element.h"
 
 #include "LmHandler.h"
@@ -1304,7 +1305,13 @@ static LmHandlerErrorStatus_t LmHandlerDeviceTimeReq(void)
 
   if (status == LORAMAC_STATUS_OK)
   {
-    return LORAMAC_HANDLER_SUCCESS;
+    LmHandlerAppData_t appData =
+    {
+      .Buffer = NULL,
+      .BufferSize = 0,
+      .Port = 0
+    };
+    return LmHandlerSend(&appData, LORAMAC_HANDLER_UNCONFIRMED_MSG, NULL, false);
   }
   else
   {
@@ -1483,8 +1490,7 @@ static void MlmeConfirm(MlmeConfirm_t *mlmeConfirm)
       }
       else
       {
-        /* Beacon not acquired */
-        /* Request Device Time again. */
+        /* Beacon not acquired, Request Device Time again. */
         LmHandlerDeviceTimeReq();
       }
     }
@@ -1640,12 +1646,12 @@ static void DisplayBeaconUpdate(LmHandlerBeaconParams_t *params)
   MW_LOG(TS_OFF, VLEVEL_M, "\r\n###### ========== %s\r\n", EventBeaconStateStrings[params->State]);
   if (params->State == LORAMAC_HANDLER_BEACON_RX)
   {
-    MW_LOG(TS_OFF, VLEVEL_H, "###### BTIME:%010d | GW DESC:%d | GW INFO:%02X %02X %02X %02X %02X %02X\r\n",
+    MW_LOG(TS_OFF, VLEVEL_M, "###### BTIME:%010d | GW DESC:%d | GW INFO:%02X %02X %02X %02X %02X %02X\r\n",
            params->Info.Time.Seconds, params->Info.GwSpecific.InfoDesc,
            params->Info.GwSpecific.Info[0], params->Info.GwSpecific.Info[1],
            params->Info.GwSpecific.Info[2], params->Info.GwSpecific.Info[3],
            params->Info.GwSpecific.Info[4], params->Info.GwSpecific.Info[5]);
-    MW_LOG(TS_OFF, VLEVEL_H, "###### FREQ:%d | DR:%d | RSSI:%d | SNR:%d\r\n",
+    MW_LOG(TS_OFF, VLEVEL_M, "###### FREQ:%d | DR:%d | RSSI:%d | SNR:%d\r\n",
            params->Info.Frequency, params->Info.Datarate,
            params->Info.Rssi, params->Info.Snr);
   }

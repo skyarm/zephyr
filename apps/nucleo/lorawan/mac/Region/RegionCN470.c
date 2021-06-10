@@ -376,12 +376,12 @@ void RegionCN470InitDefaults( InitDefaultsParams_t* params )
             // Initialize channels default mask
             /* ST_WORKAROUND_BEGIN: Hybrid mode */
 #if ( HYBRID_ENABLED == 1 )
-            NvmCtx.ChannelsDefaultMask[0] = 0x00FF;
+            NvmCtx.ChannelsDefaultMask[0] = 0x0000;
             NvmCtx.ChannelsDefaultMask[1] = 0x0000;
             NvmCtx.ChannelsDefaultMask[2] = 0x0000;
             NvmCtx.ChannelsDefaultMask[3] = 0x0000;
             NvmCtx.ChannelsDefaultMask[4] = 0x0000;
-            NvmCtx.ChannelsDefaultMask[5] = 0x0000;
+            NvmCtx.ChannelsDefaultMask[5] = 0x00FF;
 #else
             NvmCtx.ChannelsDefaultMask[0] = 0xFFFF;
             NvmCtx.ChannelsDefaultMask[1] = 0xFFFF;

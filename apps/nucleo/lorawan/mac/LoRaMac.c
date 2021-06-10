@@ -58,6 +58,7 @@
 
 #include "LoRaMac.h"
 #include "mw_log_conf.h"
+#include <stdio.h>
 
 /* Private macro -------------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -851,7 +852,7 @@ static void OnRadioTxTimeout( void )
     {
         MacCtx.MacCallbacks->MacProcessNotify( );
     }
-    MW_LOG(TS_ON, VLEVEL_M, "MAC txTimeOut\r\n" );
+    MW_LOG(TS_ON, VLEVEL_M, "MAC TxTimeout\r\n" );
 }
 
 static void OnRadioRxError( void )
@@ -862,6 +863,7 @@ static void OnRadioRxError( void )
     {
         MacCtx.MacCallbacks->MacProcessNotify( );
     }
+    MW_LOG(TS_ON, VLEVEL_M, "MAC RxError\r\n" );
 }
 
 static void OnRadioRxTimeout( void )
@@ -872,7 +874,7 @@ static void OnRadioRxTimeout( void )
     {
         MacCtx.MacCallbacks->MacProcessNotify( );
     }
-    MW_LOG(TS_ON, VLEVEL_M, "MAC rxTimeOut\r\n" );
+    MW_LOG(TS_ON, VLEVEL_M, "MAC RxTimeout\r\n" );
 }
 
 static void UpdateRxSlotIdleState( void )
@@ -2171,7 +2173,7 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                     // Compensate time difference between Tx Done time and now
                     sysTimeCurrent = SysTimeGet( );
                     sysTime = SysTimeAdd( sysTimeCurrent, SysTimeSub( sysTime, MacCtx.LastTxSysTime ) );
-
+                    
                     // Apply the new system time.
                     SysTimeSet( sysTime );
                     LoRaMacClassBDeviceTimeAns( );

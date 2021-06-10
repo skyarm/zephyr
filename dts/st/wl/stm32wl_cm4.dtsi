@@ -19,7 +19,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		cpu@0 {
+		cpu0: cpu@0 {
 			device_type = "cpu";
 			compatible = "arm,cortex-m4f";
 			reg = <0>;
@@ -116,7 +116,7 @@
                         compatible = "st,stm32-rtc";
                         reg = <0x40002800 0x400>;
                         interrupts = <42 0>;
-                        clocks = <&rcc STM32_CLOCK_BUS_APB1 0x10000000>;
+                        clocks = <&rcc STM32_CLOCK_BUS_APB1 0x00000400>;
                         prescaler = <32768>;
                         status = "disabled";
                         label = "RTC_0";
@@ -254,6 +254,7 @@
 			label = "SPI_2";
 		};
 	};
+
 };
 
 &nvic {

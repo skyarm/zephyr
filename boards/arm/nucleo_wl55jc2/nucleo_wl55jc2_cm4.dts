@@ -79,6 +79,27 @@
 		};
 	};
 
+	power-states {
+		stop0: state0 {
+			compatible = "zephyr,power-state";
+			power-state-name = "suspend-to-idle";
+			substate-id = <1>;
+			min-residency-us = <5000>;
+		};
+		stop1: state1 {
+			compatible = "zephyr,power-state";
+			power-state-name = "suspend-to-idle";
+			substate-id = <2>;
+			min-residency-us = <100000>;
+		};
+		stop2: state2 {
+			compatible = "zephyr,power-state";
+			power-state-name = "suspend-to-idle";
+			substate-id = <3>;
+			min-residency-us = <1000000>;
+		};
+	};
+
 	aliases {
 		led0 = &green_led_2;
 		sw0 = &btn0;
@@ -124,6 +145,10 @@
 	status = "okay";
 };
 
+&clk_lse {
+	status = "okay";
+};
+
 &clk_hse {
 	status = "okay";
 };
@@ -131,6 +156,8 @@
 &pll {
 	div-m = <2>;
 	mul-n = <6>;
+	div-p = <2>;
+	div-q = <2>;
 	div-r = <2>;
 	clocks = <&clk_hse>;
 	status = "okay";
@@ -141,7 +168,11 @@
 	clock-frequency = <DT_FREQ_M(48)>;
 	cpu1-prescaler = <1>;
 	cpu2-prescaler = <1>;
-	ahb3-prescaler = <1>;
 	apb1-prescaler = <1>;
 	apb2-prescaler = <1>;
+	ahb3-prescaler = <1>;
+};
+
+&cpu0 {
+	cpu-power-states = <&stop0 &stop1 &stop2>;
 };

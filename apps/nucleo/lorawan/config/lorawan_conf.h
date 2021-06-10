@@ -17,15 +17,13 @@
   ******************************************************************************
   */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __LORAWAN_CONF_H__
 #define __LORAWAN_CONF_H__
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
-/* Includes ------------------------------------------------------------------*/
+
 #include "systime.h"
 
 /* Region ------------------------------------*/
@@ -69,6 +67,7 @@ extern "C"
   * \brief Turnover temperature deviation of the clock source
   */
 #define RTC_TEMP_DEV_TURNOVER (5.0)
+
 #endif /* LORAMAC_CLASSB_ENABLED == 1 */
 
 #ifdef __cplusplus

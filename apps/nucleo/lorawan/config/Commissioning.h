@@ -26,7 +26,7 @@
   * @brief   End-device commissioning parameters
   ******************************************************************************
  */
-/* Define to prevent recursive inclusion -------------------------------------*/
+
 #ifndef __COMMISSIONING_H__
 #define __COMMISSIONING_H__
 
@@ -49,10 +49,6 @@ extern "C" {
  ******************************************************************************
  */
 #include "se-identity.h"
-
-/* USER CODE BEGIN EC1 */
-
-/* USER CODE END EC1 */
 
 /*!
  * When using ABP activation the MAC layer must know in advance to which server

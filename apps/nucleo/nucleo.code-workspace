@@ -5,6 +5,12 @@
 		},
 		{
 			"path": "../../boards/arm/nucleo_wl55jc2"
+		},
+		{
+			"path": "../../drivers/ipm"
+		},
+		{
+			"path": "../../drivers/timer"
 		}
 	],
 	"settings": {
@@ -20,42 +26,23 @@
 			"/usr/local/src/zephyros/modules/hal/stm32/stm32cube/common_ll/include", 
 			"/usr/local/src/zephyros/modules/hal/stm32/stm32cube/stm32wlxx/drivers/include",
 			"/usr/local/src/zephyros/modules/hal/stm32/stm32cube/stm32wlxx/soc",
-			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/build/zephyr/include/generated",
-			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/config",
-			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/crypto",
-			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/radio",
-			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/mac",
-			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/mac/Region",
-			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/lmh",
-			"/Users/zhangtao/Projects/zephyr/nucleo/cm4/lorawan/lmh/Packages"
+			"/Users/zhangtao/Projects/zephyr/apps/nucleo/cm4/build/zephyr/include/generated",
+			"/Users/zhangtao/Projects/zephyr/apps/nucleo/lorawan/config",
+			"/Users/zhangtao/Projects/zephyr/apps/nucleo/lorawan/crypto",
+			"/Users/zhangtao/Projects/zephyr/apps/nucleo/lorawan/radio",
+			"/Users/zhangtao/Projects/zephyr/apps/nucleo/lorawan/mac",
+			"/Users/zhangtao/Projects/zephyr/apps/nucleo/lorawan/mac/Region",
+			"/Users/zhangtao/Projects/zephyr/apps/nucleo/lorawan/lmh",
+			"/Users/zhangtao/Projects/zephyr/apps/nucleo/lorawan/lmh/Packages"
 		],
 		"C_Cpp.default.defines": [],
 		"C_Cpp.default.compilerArgs": [
 			"-include '/Users/zhangtao/Projects/zephyr/nucleo/cm4/build/zephyr/include/generated/autoconf.h"
 		],
 		"C_Cpp.default.compilerPath": "/usr/local/bin/arm-none-eabi-gcc",
-		"C_Cpp.default.intelliSenseMode": "macos-gcc-arm",
+		"C_Cpp.default.intelliSenseMode": "gcc-arm",
 		"C_Cpp.default.cStandard": "c17",
 		"C_Cpp.default.cppStandard": "c++20",
-		"files.associations": {
-			"Makefile.dep": "makefile",
-			"Makefile.features": "makefile",
-			"Makefile.ci": "makefile",
-			"Makefile.include": "makefile",
-			"wscript": "python",
-			"log.h": "c",
-			"log_core.h": "c",
-			"log_msg.h": "c",
-			"log_msg2.h": "c",
-			"syscall.h": "c",
-			"device.h": "c",
-			"init.h": "c",
-			"kernel.h": "c",
-			"kernel_includes.h": "c",
-			"cpu.h": "c",
-			"arch.h": "c",
-			"devicetree.h": "c",
-			"nvmctxmgmt.h": "c"
-		},
+		"C_Cpp.autoAddFileAssociations": false
 	}
 }
