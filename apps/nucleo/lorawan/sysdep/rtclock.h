@@ -21,10 +21,6 @@ void RtcStopAlarm(void);
 
 void RtcSetAlarm(uint32_t timeout);
 
-uint32_t RtcSetTimerContext(void);
-
-uint32_t RtcGetTimerElapsedTime(void);
-
 uint32_t RtcGetTimerContext(void);
 
 

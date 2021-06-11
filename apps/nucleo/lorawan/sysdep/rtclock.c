@@ -3,7 +3,6 @@
 #include "timer.h"
 #include "rtclock.h"
 
-static volatile uint32_t rtc_clock_context;
 static uint32_t rtc_clock_backup[2];
 
 static void rtc_clock_callback(struct k_timer *timer) {
@@ -30,18 +29,3 @@ void RtcBkupRead(uint32_t *second, uint32_t *subsecond) {
   *second = rtc_clock_backup[0];
   *subsecond = rtc_clock_backup[1];
 }
-
-uint32_t RtcGetTimerElapsedTime(void) {
-  return RtcGetTimerValue() - rtc_clock_context;
-}
-
-uint32_t RtcSetTimerContext(void) {
-  rtc_clock_context = RtcGetTimerValue();
-  return rtc_clock_context;
-}
-
-/* For us, 1 tick = 1 milli second. So no need to do any conversion here */
-uint32_t RtcGetTimerContext(void) { 
-  return rtc_clock_context; 
-}
-

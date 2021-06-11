@@ -6,6 +6,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+#include <string.h>
 #include <device.h>
 #include <drivers/gpio.h>
 #include <zephyr.h>
@@ -49,6 +50,16 @@ static void mac_process_cb(void) {
 }
 
 static void class_changed_cb(DeviceClass_t deviceClass) {
+  if (deviceClass == CLASS_B) {
+    char *p = "I'm on CLASS B";
+    LmHandlerAppData_t appData =
+    {
+      .Buffer = (uint8_t *)p,
+      .BufferSize = (uint8_t)strlen(p),
+      .Port = 1
+    };
+    LmHandlerSend(&appData, LORAMAC_HANDLER_UNCONFIRMED_MSG, NULL, true);
+  }
   printk("Class has been changed to CLASS %c.\n", "ABC"[deviceClass]);
 }
 
@@ -72,7 +83,8 @@ static LmHandlerParams_t LmHandlerParams = {
     .DefaultClass = CLASS_B,
     .TxDatarate = CN470_DEFAULT_DATARATE,
     .DutyCycleEnabled = false,
-    .PingPeriodicity = 6};
+    .PingPeriodicity = 6
+};
 
 static LmhpComplianceParams_t LmhpComplianceParams = {
     .AdrEnabled = true,
@@ -108,7 +120,7 @@ void main(void) {
 
   for (;;) {
     LmHandlerProcess();
-    if (k_sem_take(&sem_mac_process, K_SECONDS(128)) == 0) {
+    if (k_sem_take(&sem_mac_process, K_SECONDS(1000)) == 0) {
       continue;
     }
   }

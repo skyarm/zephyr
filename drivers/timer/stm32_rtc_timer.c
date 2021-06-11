@@ -7,20 +7,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <device.h>
-#include <zephyr.h>
-#include <sys_clock.h>
 #include <drivers/timer/system_timer.h>
-
+#include <drivers/clock_control/stm32_clock_control.h>
+#include <drivers/clock_control.h>
 #include <stm32_ll_pwr.h>
 #include <stm32_ll_rcc.h>
 #include <stm32_ll_rtc.h>
-
-#define RTC_TIMER_PREDIV_S 12
-#define RTC_TIMER_PREDIV_A ((1 << (15 - RTC_TIMER_PREDIV_S)) - 1)
+#include <sys_clock.h>
+#include <zephyr.h>
 
 #define RTC_TIMER_GUARD_VALUE 3
 
 #define DT_DRV_COMPAT st_stm32_rtc
+
+#define RTC_TIMER_PREDIV_A \
+  ((DT_INST_PROP(0, prescaler) / CONFIG_SYS_CLOCK_TICKS_PER_SEC) - 1)
 
 static struct k_spinlock rtc_timer_lock;
 
@@ -70,19 +71,21 @@ static void rtc_timer_set_alarm(uint32_t ticks) {
   /* Enable RTC writing protection */
   LL_RTC_EnableWriteProtection(RTC);
 
-  /* 
+  /*
     Enable EXTI interrupt
-    Let me wake up from power saving mode 
+    Let me wake up from power saving mode
   */
   LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_17);
 }
 
+static struct stm32_pclken rtc_clock_pclken = {
+  .enr = DT_INST_CLOCKS_CELL(0, bits),
+  .bus = DT_INST_CLOCKS_CELL(0, bus)
+};
+
 int sys_clock_driver_init(const struct device *dev) {
   ARG_UNUSED(dev);
-#if defined(LL_APB1_GRP1_PERIPH_PWR)
-  /* Enable the power interface clock */
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-#endif /* LL_APB1_GRP1_PERIPH_PWR */
+  
   /* Enable backup domain */
   LL_PWR_EnableBkUpAccess();
   while (LL_PWR_IsEnabledBkUpAccess() == 0) {
@@ -90,7 +93,7 @@ int sys_clock_driver_init(const struct device *dev) {
   }
 #ifdef CONFIG_STM32_RTC_CLOCK_LSE
   if (LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_LSE) {
-#else 
+#else
   if (LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_LSI) {
 #endif
     uint32_t reg = READ_BIT(RCC->BDCR, ~(RCC_BDCR_RTCSEL));
@@ -100,23 +103,27 @@ int sys_clock_driver_init(const struct device *dev) {
   }
 #ifdef CONFIG_STM32_RTC_CLOCK_LSE
   while (LL_RCC_LSE_IsReady() == 0) {
-#else 
+#else
   while (LL_RCC_LSI_IsReady() == 0) {
 #endif
   }
 
-#ifdef CONFIG_STM32_RTC_TIMER_CLOCK_LSE
+#ifdef CONFIG_STM32_RTC_CLOCK_LSE
   LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSE);
-#else 
+#else
   LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSI);
 #endif
 
   LL_RCC_EnableRTC();
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_RTCAPB);
+
+  const struct device *rcc_dev = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
+  if (clock_control_on(rcc_dev, (clock_control_subsys_t *)&rtc_clock_pclken) != 0) {
+    return -EIO;
+  }
 
   LL_RTC_DisableWriteProtection(RTC);
   if (LL_RTC_EnterInitMode(RTC) == 0) {
-    assert(0);
+    return -EIO;
   }
 
   LL_RTC_SetHourFormat(RTC, LL_RTC_HOURFORMAT_24HOUR);
@@ -133,7 +140,6 @@ int sys_clock_driver_init(const struct device *dev) {
   LL_RTC_DisableAlarmPullUp(RTC);
   LL_RTC_SetAlarmOutputType(RTC, RTC_OUTPUT_TYPE_OPENDRAIN);
   LL_RTC_DisableOutput2(RTC);
-
 
   LL_RTC_EnableShadowRegBypass(RTC);
 
@@ -165,7 +171,7 @@ void sys_clock_set_timeout(int32_t ticks, bool idle) {
    * treated identically: it simply indicates the kernel would like the
    * next tick announcement as soon as possible.
    */
-  if (LL_RTC_IsActiveFlag_ALRA(RTC) != 0) {
+  if (LL_RTC_IsActiveFlag_ALRA(RTC)) {
     if (rtc_timer_diff(rtc_timer_backup, current) < RTC_TIMER_GUARD_VALUE) {
       /* interrupt happens or happens soon.
        * It's impossible to set autoreload value. */

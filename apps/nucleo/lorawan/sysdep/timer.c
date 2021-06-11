@@ -40,6 +40,7 @@
         }                                    \
     } while (0);
 
+static uint32_t TimerBackupValue = 0;
 /*!
  * Timers list head pointer
  */
@@ -100,8 +101,6 @@ void TimerSetContext(TimerEvent_t *obj, void *context)
 
 void TimerStart(TimerEvent_t *obj)
 {
-    uint32_t elapsedTime = 0;
-
     CRITICAL_SECTION_BEGIN();
 
     if ((obj == NULL) || (TimerExists(obj) == true))
@@ -116,15 +115,10 @@ void TimerStart(TimerEvent_t *obj)
 
     if (TimerListHead == NULL)
     {
-        RtcSetTimerContext();
-        // Inserts a timer at time now + obj->Timestamp
         TimerInsertNewHeadTimer(obj);
     }
     else
     {
-        elapsedTime = RtcGetTimerElapsedTime();
-        obj->Timestamp += elapsedTime;
-
         if (obj->Timestamp < TimerListHead->Timestamp)
         {
             TimerInsertNewHeadTimer(obj);
@@ -184,8 +178,8 @@ void TimerIrqHandler(void)
     TimerEvent_t *cur;
     TimerEvent_t *next;
 
-    uint32_t old = RtcGetTimerContext();
-    uint32_t now = RtcSetTimerContext();
+    uint32_t old = TimerBackupValue;
+    uint32_t now = RtcGetTimerValue();
     uint32_t deltaContext = now - old; // intentional wrap around
 
     // Update timeStamp based upon new Time Reference
@@ -216,7 +210,7 @@ void TimerIrqHandler(void)
     }
 
     // Remove all the expired object from the list
-    while ((TimerListHead != NULL) && (TimerListHead->Timestamp < RtcGetTimerElapsedTime()))
+    while ((TimerListHead != NULL) && (TimerListHead->Timestamp == 0))
     {
         cur = TimerListHead;
         TimerListHead = TimerListHead->Next;
@@ -367,9 +361,11 @@ static void TimerSetTimeout(TimerEvent_t *obj)
     obj->IsNext2Expire = true;
 
     // In case deadline too soon
-    if (obj->Timestamp < (RtcGetTimerElapsedTime() + minTicks))
+    if (obj->Timestamp < minTicks)
     {
-        obj->Timestamp = RtcGetTimerElapsedTime() + minTicks;
+        obj->Timestamp = minTicks;
     }
+
+    TimerBackupValue = RtcGetTimerValue();
     RtcSetAlarm(obj->Timestamp);
 }
