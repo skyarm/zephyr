@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include <string.h>
 #include <device.h>
 #include <drivers/gpio.h>
+#include <string.h>
 #include <zephyr.h>
 
 #include "Commissioning.h"
@@ -16,112 +16,100 @@
 #include "LmhpCompliance.h"
 #include "RegionCN470.h"
 #include "lora_info.h"
-#include "rtclock.h"
 
-static uint8_t battery_level_cb() { return 254; }
-static uint16_t get_temperature_cb() { return 25; }
-
-static void join_request_cb(LmHandlerJoinParams_t *params) {
-  printk("Joined to Lorawan with status[%u], DataRate[%d].\n", params->Status,
-         params->Datarate);
+static uint8_t get_battery_level_cb()
+{
+	return 254;
+}
+static uint16_t get_temperature_cb()
+{
+	return 25;
 }
 
-static void data_sent_cb(LmHandlerTxParams_t *params) {
-  printk(
-      "Sent [%d] bytes to Lorawan with status[%u], DataRate[%d], TxPower[%d], "
-      "Channel[%d].\n",
-      params->AppData.BufferSize, params->Status, params->Datarate,
-      params->TxPower, params->Channel);
+static void join_request_cb(LmHandlerJoinParams_t *params)
+{
+	printk("Joined to Lorawan with status[%u], DataRate[%d].\n", params->Status,
+	       params->Datarate);
+}
+
+static void data_sent_cb(LmHandlerTxParams_t *params)
+{
+	printk("Sent [%d] bytes to Lorawan with status[%u], DataRate[%d], TxPower[%d], Channel[%d].\n",
+	       params->AppData.BufferSize, params->Status, params->Datarate, params->TxPower,
+	       params->Channel);
 }
 
 static void data_received_cb(LmHandlerAppData_t *appData,
-                             LmHandlerRxParams_t *params) {
-  printk(
-      "Received [%u] bytes from Lorawan with status[%u], DataRate[%d], "
-      "Rssi[%d], "
-      "Snr[%d].\n",
-      appData->BufferSize, params->Status, params->Datarate, params->Rssi,
-      params->Snr);
+			     LmHandlerRxParams_t *params)
+{
+	printk("Received [%u] bytes from Lorawan with status[%u], DataRate[%d], Rssi[%d], Snr[%d].\n",
+	       appData->BufferSize, params->Status, params->Datarate, params->Rssi,
+	       params->Snr);
 }
 
 K_SEM_DEFINE(sem_mac_process, 0, 1);
-static void mac_process_cb(void) {
-  k_sem_give(&sem_mac_process);
+
+static void mac_process_cb(void)
+{
+	k_sem_give(&sem_mac_process);
 }
 
-static void class_changed_cb(DeviceClass_t deviceClass) {
-  if (deviceClass == CLASS_B) {
-    char *p = "I'm on CLASS B";
-    LmHandlerAppData_t appData =
-    {
-      .Buffer = (uint8_t *)p,
-      .BufferSize = (uint8_t)strlen(p),
-      .Port = 1
-    };
-    LmHandlerSend(&appData, LORAMAC_HANDLER_UNCONFIRMED_MSG, NULL, true);
-  }
-  printk("Class has been changed to CLASS %c.\n", "ABC"[deviceClass]);
+static void class_changed_cb(DeviceClass_t deviceClass)
+{
+	if (deviceClass == CLASS_B) {
+		char *p = "I'm on CLASS B";
+		LmHandlerAppData_t appData = {
+			.Buffer = (uint8_t *)p, .BufferSize = (uint8_t)strlen(p), .Port = 1
+		};
+		LmHandlerSend(&appData, LORAMAC_HANDLER_UNCONFIRMED_MSG, NULL, true);
+	}
+	printk("Class has been changed to CLASS %c.\n", "ABC"[deviceClass]);
 }
 
-static void beacon_status_changed_cb(const LmHandlerBeaconParams_t *param) {
-  printk("Beacon state has been changed to %d.\n", param->State);
+static void beacon_status_changed_cb(const LmHandlerBeaconParams_t *param)
+{
+	printk("Beacon state has been changed to %d.\n", param->State);
 }
 
-static LmHandlerCallbacks_t LmHandlerCallbacks = {
-    .GetBatteryLevel = battery_level_cb,
-    .GetTemperature = get_temperature_cb,
-    .OnMacProcess = mac_process_cb,
-    .OnJoinRequest = join_request_cb,
-    .OnTxData = data_sent_cb,
-    .OnRxData = data_received_cb,
-    .OnClassChange = class_changed_cb,
-    .OnBeaconStatusChange = beacon_status_changed_cb};
-
-static LmHandlerParams_t LmHandlerParams = {
-    .ActiveRegion = LORAMAC_REGION_CN470,
-    .AdrEnable = LORAMAC_HANDLER_ADR_ON,
-    .DefaultClass = CLASS_B,
-    .TxDatarate = CN470_DEFAULT_DATARATE,
-    .DutyCycleEnabled = false,
-    .PingPeriodicity = 6
+static const LmHandlerCallbacks_t LmHandlerCallbacks = {
+	.GetBatteryLevel = get_battery_level_cb,
+	.GetTemperature = get_temperature_cb,
+	.OnMacProcess = mac_process_cb,
+	.OnJoinRequest = join_request_cb,
+	.OnTxData = data_sent_cb,
+	.OnRxData = data_received_cb,
+	.OnClassChange = class_changed_cb,
+	.OnBeaconStatusChange = beacon_status_changed_cb
 };
 
-static LmhpComplianceParams_t LmhpComplianceParams = {
-    .AdrEnabled = true,
-    .DutyCycleEnabled = false,
-    .StopPeripherals = NULL,
-    .StartPeripherals = NULL,
+static const LmHandlerParams_t LmHandlerParams = {
+	.ActiveRegion = LORAMAC_REGION_CN470,
+	.AdrEnable = LORAMAC_HANDLER_ADR_ON,
+	.DefaultClass = CLASS_B,
+	.TxDatarate = CN470_DEFAULT_DATARATE,
+	.DutyCycleEnabled = false,
+	.PingPeriodicity = 6
 };
 
-static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+void main(void)
+{
+	LoraInfo_Init();
+	if (LmHandlerInit(&LmHandlerCallbacks) != LORAMAC_HANDLER_SUCCESS) {
+		printk("LoRaMac wasn't properly initialized\n");
+		assert(0);
+	}
 
-void main(void) {
-  gpio_pin_configure(led0.port, led0.pin, GPIO_OUTPUT_LOW);
-  gpio_pin_set(led0.port, led0.pin, 1);
-  
-  LoraInfo_Init();
-  if (LmHandlerInit(&LmHandlerCallbacks) != LORAMAC_HANDLER_SUCCESS) {
-    printk("LoRaMac wasn't properly initialized\n");
-    assert(0);
-  }
+	if (LmHandlerConfigure(&LmHandlerParams) != LORAMAC_HANDLER_SUCCESS) {
+		printk("LoRaMac wasn't properly initialized\n");
+		assert(0);
+	}
 
-  if (LmHandlerConfigure(&LmHandlerParams) != LORAMAC_HANDLER_SUCCESS) {
-    printk("LoRaMac wasn't properly initialized\n");
-    assert(0);
-  }
+	LmHandlerJoin(ACTIVATION_TYPE_OTAA);
 
-  // The LoRa-Alliance Compliance protocol package should always be
-  // initialized and activated.
-  LmHandlerPackageRegister(PACKAGE_ID_COMPLIANCE, &LmhpComplianceParams);
-  // LmHandlerPackageRegister(PACKAGE_ID_CLOCK_SYNC, NULL);
-  // LmHandlerPackageRegister(PACKAGE_ID_REMOTE_MCAST_SETUP, NULL);
-
-  LmHandlerJoin(ACTIVATION_TYPE_OTAA);
-
-  for (;;) {
-    LmHandlerProcess();
-    if (k_sem_take(&sem_mac_process, K_SECONDS(1000)) == 0) {
-      continue;
-    }
-  }
+	for (;;) {
+		LmHandlerProcess();
+		if (k_sem_take(&sem_mac_process, K_SECONDS(1000)) == 0) {
+			continue;
+		}
+	}
 }

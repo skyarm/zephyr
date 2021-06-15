@@ -199,7 +199,7 @@ typedef struct LmHandlerCallbacks_s
  * \retval status Returns \ref LORAMAC_HANDLER_SUCCESS if package have been
  *                initialized else \ref LORAMAC_HANDLER_ERROR
  */
-LmHandlerErrorStatus_t LmHandlerInit(LmHandlerCallbacks_t *handlerCallbacks);
+LmHandlerErrorStatus_t LmHandlerInit(const LmHandlerCallbacks_t *handlerCallbacks);
 
 /*!
  * \brief Indicates if the LoRaMacHandler is busy
@@ -273,7 +273,7 @@ LmHandlerErrorStatus_t LmHandlerRequestClass(DeviceClass_t newClass);
  * \retval status Returns \ref LORAMAC_HANDLER_SUCCESS if configuration is
  *                done else \ref LORAMAC_HANDLER_ERROR
  */
-LmHandlerErrorStatus_t LmHandlerConfigure(LmHandlerParams_t *handlerParams);
+LmHandlerErrorStatus_t LmHandlerConfigure(const LmHandlerParams_t *handlerParams);
 
 /*!
  * \brief LoRaMac handler package initialization

@@ -7,7 +7,7 @@ zephyr_include_directories(../config)
 zephyr_sources(
   systime.c
   timer.c
-  rtclock.c
+  rtctime.c
   utilities.c
   subghz.c
   lora_info.c

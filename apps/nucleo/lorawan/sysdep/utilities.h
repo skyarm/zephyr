@@ -21,15 +21,15 @@
  * \author    Gregory Cristian ( Semtech )
  */
 /**
-  ******************************************************************************
-  *
-  *          Portions COPYRIGHT 2020 STMicroelectronics
-  *
-  * @file    utilities.h
-  * @author  MCD Application Team
-  * @brief   Header for driver utilities.c module
-  ******************************************************************************
-  */
+ ******************************************************************************
+ *
+ *          Portions COPYRIGHT 2020 STMicroelectronics
+ *
+ * @file    utilities.h
+ * @author  MCD Application Team
+ * @brief   Header for driver utilities.c module
+ ******************************************************************************
+ */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __UTILITIES_H__
@@ -67,7 +67,7 @@ extern "C" {
  * \retval minValue Minimum value
  */
 #ifndef MIN
-#define MIN( a, b ) ( ( ( a ) < ( b ) ) ? ( a ) : ( b ) )
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
 /*!
@@ -78,18 +78,18 @@ extern "C" {
  * \retval maxValue Maximum value
  */
 #ifndef MAX
-#define MAX( a, b ) ( ( ( a ) > ( b ) ) ? ( a ) : ( b ) )
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
 /**
-  * \brief Calculates ceiling( X / N )
-  *
-  * \param [IN] X numerator
-  * \param [IN] N denominator
-  *
-  */
+ * \brief Calculates ceiling( X / N )
+ *
+ * \param [IN] X numerator
+ * \param [IN] N denominator
+ *
+ */
 #ifndef DIVC
-#define DIVC( X, N )                ( ( ( X ) + ( N ) - 1 ) / ( N ) )
+#define DIVC(X, N)                (((X) + ( N ) -1) / (N))
 #endif
 
 /*!
@@ -98,7 +98,7 @@ extern "C" {
  * \param [IN] n power value
  * \retval result of raising 2 to the power n
  */
-#define POW2( n ) ( 1 << n )
+#define POW2(n) (1 << n)
 
 
 #define CRITICAL_SECTION_BEGIN()  uint32_t __irq_mask__ = irq_lock();
@@ -108,23 +108,21 @@ extern "C" {
 /*!
  * Version
  */
-typedef union Version_u
-{   
-    struct Version_s
-    {   
-        uint8_t Revision;
-        uint8_t Patch;
-        uint8_t Minor;
-        uint8_t Major;
-    }Fields; 
-    uint32_t Value;
-}Version_t;
+typedef union Version_u {
+	struct Version_s {
+		uint8_t Revision;
+		uint8_t Patch;
+		uint8_t Minor;
+		uint8_t Major;
+	} Fields;
+	uint32_t Value;
+} Version_t;
 /*!
  * \brief Initializes the pseudo random generator initial value
  *
  * \param [IN] seed Pseudo random generator initial value
  */
-void srand1( uint32_t seed );
+void srand1(uint32_t seed);
 
 /*!
  * \brief Computes a random number between min and max
@@ -133,7 +131,7 @@ void srand1( uint32_t seed );
  * \param [IN] max range maximum value
  * \retval random random value in range min..max
  */
-int32_t randr( int32_t min, int32_t max );
+int32_t randr(int32_t min, int32_t max);
 
 /*!
  * \brief Copies size elements of src array to dst array
@@ -144,7 +142,7 @@ int32_t randr( int32_t min, int32_t max );
  * \param [IN]  src  Source array
  * \param [IN]  size Number of bytes to be copied
  */
-void memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size );
+void memcpy1(uint8_t *dst, const uint8_t *src, uint16_t size);
 
 /*!
  * \brief Copies size elements of src array to dst array reversing the byte order
@@ -153,7 +151,7 @@ void memcpy1( uint8_t *dst, const uint8_t *src, uint16_t size );
  * \param [IN]  src  Source array
  * \param [IN]  size Number of bytes to be copied
  */
-void memcpyr( uint8_t *dst, const uint8_t *src, uint16_t size );
+void memcpyr(uint8_t *dst, const uint8_t *src, uint16_t size);
 
 /*!
  * \brief Set size elements of dst array with value
@@ -164,7 +162,7 @@ void memcpyr( uint8_t *dst, const uint8_t *src, uint16_t size );
  * \param [IN]  value Default value
  * \param [IN]  size  Number of bytes to be copied
  */
-void memset1( uint8_t *dst, uint8_t value, uint16_t size );
+void memset1(uint8_t *dst, uint8_t value, uint16_t size);
 
 /*!
  * \brief Converts a nibble to an hexadecimal character
@@ -172,38 +170,38 @@ void memset1( uint8_t *dst, uint8_t value, uint16_t size );
  * \param [IN] a   Nibble to be converted
  * \retval hexChar Converted hexadecimal character
  */
-int8_t Nibble2HexChar( uint8_t a );
+int8_t Nibble2HexChar(uint8_t a);
 
 /* Exported functions ------------------------------------------------------- */
-  /**
-  * @brief  This API copies one buffer to another
-  * @param  dst: output buffer to be filled
-  * @param  src: input buffer
-  * @param  size: size of 8b data
-  * @retval None
-  */
-  void UTIL_MEM_cpy_8( void *dst, const void *src, uint16_t size );
+/**
+ * @brief  This API copies one buffer to another
+ * @param  dst: output buffer to be filled
+ * @param  src: input buffer
+ * @param  size: size of 8b data
+ * @retval None
+ */
+void UTIL_MEM_cpy_8(void *dst, const void *src, uint16_t size);
 
-  /**
-  * @brief  This API copies one buffer to another in reverse
-  * @param  dst: output buffer to be filled
-  * @param  src: input buffer
-  * @param  size: size of 8b data
-  * @retval None
-  */
-  void UTIL_MEM_cpyr_8( void *dst, const void *src, uint16_t size );
+/**
+ * @brief  This API copies one buffer to another in reverse
+ * @param  dst: output buffer to be filled
+ * @param  src: input buffer
+ * @param  size: size of 8b data
+ * @retval None
+ */
+void UTIL_MEM_cpyr_8(void *dst, const void *src, uint16_t size);
 
-  /**
-  * @brief  This API copies one value into buffer
-  * @param  dst: output buffer to be filled
-  * @param  value: value
-  * @param  size: size of 8b data
-  * @retval None
-  */
-  void UTIL_MEM_set_8( void *dst, uint8_t value, uint16_t size );
+/**
+ * @brief  This API copies one value into buffer
+ * @param  dst: output buffer to be filled
+ * @param  value: value
+ * @param  size: size of 8b data
+ * @retval None
+ */
+void UTIL_MEM_set_8(void *dst, uint8_t value, uint16_t size);
 
 
-  uint32_t GetDevAddr(void);
+uint32_t GetDevAddr(void);
 
 #ifdef __cplusplus
 }

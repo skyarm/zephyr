@@ -18,16 +18,6 @@
 #include <logging/log.h>
 LOG_MODULE_DECLARE(soc, CONFIG_SOC_LOG_LEVEL);
 
-static inline void suspend_systick(void) {
-  /* Disable SysTick Interrupt */
-  CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);
-}
-
-static inline void resume_systick(void) {
-  /* Enable SysTick Interrupt */
-  SET_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);
-}
-
 /* Invoke Low Power/System Off specific Tasks */
 void pm_power_state_set(struct pm_state_info info)
 {
@@ -47,7 +37,6 @@ void pm_power_state_set(struct pm_state_info info)
 		LL_PWR_SetPowerMode(LL_PWR_MODE_STOP0);
 		LL_LPM_EnableDeepSleep();
 		/* enter SLEEP mode : WFE or WFI */
-		printk("Enter STOP0 mode\n");
 		k_cpu_idle();
 		break;
 	case 2: /* this corresponds to the STOP1 mode: */
@@ -60,7 +49,6 @@ void pm_power_state_set(struct pm_state_info info)
 		LL_PWR_SetPowerMode(LL_PWR_MODE_STOP1);
 		LL_LPM_EnableDeepSleep();
 		/* enter SLEEP mode : WFE or WFI */
-		printk("Enter STOP1 mode\n");
 		k_cpu_idle();
 		break;
 	case 3: /* this corresponds to the STOP2 mode: */
@@ -76,7 +64,6 @@ void pm_power_state_set(struct pm_state_info info)
 		LL_PWR_SetPowerMode(LL_PWR_MODE_STOP2);
 		LL_LPM_EnableDeepSleep();
 		/* enter SLEEP mode : WFE or WFI */
-		printk("Enter STOP2 mode\n");
 		k_cpu_idle();
 		break;
 	default:
@@ -105,12 +92,15 @@ void pm_power_state_exit_post_ops(struct pm_state_info info)
 				info.substate_id);
 			break;
 		}
-		/* need to restore the clock */
-		stm32_clock_control_init(NULL);
-		LL_PWR_EnableBkUpAccess();
-  		while (LL_PWR_IsEnabledBkUpAccess() == 0) {
-  		}
-		printk("Exit STOP mode\n");
+		if (LL_RCC_GetSysClkSource() == LL_RCC_SYS_CLKSOURCE_STATUS_PLL) {
+			LOG_DBG("MCU did not enter stop mode beacuse NVIC had a pending IT");
+		} else {
+			/* need to restore the clock */
+			stm32_clock_control_init(NULL);
+			LL_PWR_EnableBkUpAccess();
+  			while (LL_PWR_IsEnabledBkUpAccess() == 0) {
+  			}
+		}
 	}
 
 	/*
@@ -130,7 +120,7 @@ static int stm32_power_init(const struct device *dev)
 	/* Enable the Debug Module during STOP mode */
 	LL_DBGMCU_EnableDBGStopMode();
 #endif /* CONFIG_DEBUG */
-
+	LOG_DBG("Initialize STM32 Power success");
 	return 0;
 }
 

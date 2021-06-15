@@ -167,21 +167,6 @@ static void LmHandlerPackagesNotify(PackageNotifyTypes_t notifyType, void *param
  */
 static bool LmHandlerPackageIsInitialized(uint8_t id);
 
-/*!
- * \brief   Displays end-device class update
- *
- * \param   [IN] deviceClass Current end-device class
- */
-static void DisplayClassUpdate(DeviceClass_t deviceClass);
-
-#if ( LORAMAC_CLASSB_ENABLED == 1 )
-/*!
- * \brief   Displays beacon status update
- *
- * \param   [IN] params Beacon parameters
- */
-static void DisplayBeaconUpdate(LmHandlerBeaconParams_t *params);
-#endif /* LORAMAC_CLASSB_ENABLED == 1 */
 
 /* Private variables ---------------------------------------------------------*/
 static CommissioningParams_t CommissioningParams =
@@ -296,7 +281,7 @@ static bool IsClassBSwitchPending = false;
 static bool CtxRestoreDone = false;
 
 /* Exported functions ---------------------------------------------------------*/
-LmHandlerErrorStatus_t LmHandlerInit(LmHandlerCallbacks_t *handlerCallbacks)
+LmHandlerErrorStatus_t LmHandlerInit(const LmHandlerCallbacks_t *handlerCallbacks)
 {
   UTIL_MEM_cpy_8((void *)&LmHandlerCallbacks, (const void *)handlerCallbacks, sizeof(LmHandlerCallbacks_t));
 
@@ -324,7 +309,7 @@ LmHandlerErrorStatus_t LmHandlerInit(LmHandlerCallbacks_t *handlerCallbacks)
   return LORAMAC_HANDLER_SUCCESS;
 }
 
-LmHandlerErrorStatus_t LmHandlerConfigure(LmHandlerParams_t *handlerParams)
+LmHandlerErrorStatus_t LmHandlerConfigure(const LmHandlerParams_t *handlerParams)
 {
   MibRequestConfirm_t mibReq;
   LoraInfo_t *loraInfo;
@@ -701,7 +686,6 @@ LmHandlerErrorStatus_t LmHandlerRequestClass(DeviceClass_t newClass)
           {
             /* Switch is instantaneous */
             LmHandlerCallbacks.OnClassChange( CLASS_A );
-            DisplayClassUpdate(CLASS_A);
           }
           else
           {
@@ -741,7 +725,6 @@ LmHandlerErrorStatus_t LmHandlerRequestClass(DeviceClass_t newClass)
           if (LoRaMacMibSetRequestConfirm(&mibReq) == LORAMAC_STATUS_OK)
           {
             LmHandlerCallbacks.OnClassChange( CLASS_C );
-            DisplayClassUpdate(CLASS_C);
           }
           else
           {
@@ -1508,8 +1491,6 @@ static void MlmeConfirm(MlmeConfirm_t *mlmeConfirm)
 
         LmHandlerCallbacks.OnClassChange(CLASS_B);
 
-        DisplayClassUpdate(CLASS_B);
-
         IsClassBSwitchPending = false;
       }
       else
@@ -1548,9 +1529,6 @@ static void MlmeIndication(MlmeIndication_t *mlmeIndication)
       LmHandlerCallbacks.OnBeaconStatusChange(&BeaconParams);
       LmHandlerCallbacks.OnClassChange(CLASS_A);
 
-      DisplayClassUpdate(CLASS_A);
-      DisplayBeaconUpdate(&BeaconParams);
-
       LmHandlerDeviceTimeReq();
     }
     break;
@@ -1562,7 +1540,6 @@ static void MlmeIndication(MlmeIndication_t *mlmeIndication)
         BeaconParams.Info = mlmeIndication->BeaconInfo;
 
         LmHandlerCallbacks.OnBeaconStatusChange( &BeaconParams );
-        DisplayBeaconUpdate(&BeaconParams);
       }
       else
       {
@@ -1570,7 +1547,6 @@ static void MlmeIndication(MlmeIndication_t *mlmeIndication)
         BeaconParams.Info = mlmeIndication->BeaconInfo;
 
         LmHandlerCallbacks.OnBeaconStatusChange( &BeaconParams );
-        DisplayBeaconUpdate(&BeaconParams);
       }
       break;
     }
@@ -1633,27 +1609,3 @@ static void LmHandlerPackagesNotify(PackageNotifyTypes_t notifyType, void *param
   }
 }
 
-static void DisplayClassUpdate(DeviceClass_t deviceClass)
-{
-  MW_LOG(TS_OFF, VLEVEL_M, "Switch to Class %c done\r\n", "ABC"[deviceClass]);
-}
-
-#if ( LORAMAC_CLASSB_ENABLED == 1 )
-static void DisplayBeaconUpdate(LmHandlerBeaconParams_t *params)
-{
-  static const char *EventBeaconStateStrings[] = { "BC_ACQUIRING", "BC_LOST", "BC_RECEIVED", "BC_NOT_RECEIVED" };
-
-  MW_LOG(TS_OFF, VLEVEL_M, "\r\n###### ========== %s\r\n", EventBeaconStateStrings[params->State]);
-  if (params->State == LORAMAC_HANDLER_BEACON_RX)
-  {
-    MW_LOG(TS_OFF, VLEVEL_M, "###### BTIME:%010d | GW DESC:%d | GW INFO:%02X %02X %02X %02X %02X %02X\r\n",
-           params->Info.Time.Seconds, params->Info.GwSpecific.InfoDesc,
-           params->Info.GwSpecific.Info[0], params->Info.GwSpecific.Info[1],
-           params->Info.GwSpecific.Info[2], params->Info.GwSpecific.Info[3],
-           params->Info.GwSpecific.Info[4], params->Info.GwSpecific.Info[5]);
-    MW_LOG(TS_OFF, VLEVEL_M, "###### FREQ:%d | DR:%d | RSSI:%d | SNR:%d\r\n",
-           params->Info.Frequency, params->Info.Datarate,
-           params->Info.Rssi, params->Info.Snr);
-  }
-}
-#endif /* LORAMAC_CLASSB_ENABLED == 1 */

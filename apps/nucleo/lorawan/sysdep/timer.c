@@ -21,24 +21,21 @@
  * \author    Gregory Cristian ( Semtech )
  */
 #include "timer.h"
+
+#include "rtctime.h"
 #include "utilities.h"
-#include "rtclock.h"
 /*!
  * Safely execute call back
  */
 #define ExecuteCallBack(_callback_, context) \
-    do                                       \
-    {                                        \
-        if (_callback_ == NULL)              \
-        {                                    \
-            while (1)                        \
-                ;                            \
-        }                                    \
-        else                                 \
-        {                                    \
-            _callback_(context);             \
-        }                                    \
-    } while (0);
+	do {				     \
+		if (_callback_ == NULL) {    \
+			while (1)	     \
+			;		     \
+		} else {		     \
+			_callback_(context); \
+		}			     \
+	} while (0);
 
 static uint32_t TimerBackupValue = 0;
 /*!
@@ -64,7 +61,8 @@ static void TimerInsertNewHeadTimer(TimerEvent_t *obj);
  *         next timer to expire.
  *
  * \param [IN]  obj Timer object to be added to the list
- * \param [IN]  remainingTime Remaining time of the running head after which the object may be added
+ * \param [IN]  remainingTime Remaining time of the running head after which the
+ * object may be added
  */
 static void TimerInsertTimer(TimerEvent_t *obj);
 
@@ -85,287 +83,244 @@ static bool TimerExists(TimerEvent_t *obj);
 
 void TimerInit(TimerEvent_t *obj, void (*callback)(void *context))
 {
-    obj->Timestamp = 0;
-    obj->ReloadValue = 0;
-    obj->IsStarted = false;
-    obj->IsNext2Expire = false;
-    obj->Callback = callback;
-    obj->Context = NULL;
-    obj->Next = NULL;
+	obj->Timestamp = 0;
+	obj->ReloadValue = 0;
+	obj->IsStarted = false;
+	obj->IsNext2Expire = false;
+	obj->Callback = callback;
+	obj->Context = NULL;
+	obj->Next = NULL;
 }
 
 void TimerSetContext(TimerEvent_t *obj, void *context)
 {
-    obj->Context = context;
+	obj->Context = context;
 }
 
 void TimerStart(TimerEvent_t *obj)
 {
-    CRITICAL_SECTION_BEGIN();
+	CRITICAL_SECTION_BEGIN();
 
-    if ((obj == NULL) || (TimerExists(obj) == true))
-    {
-        CRITICAL_SECTION_END();
-        return;
-    }
+	if ((obj == NULL) || (TimerExists(obj) == true)) {
+		CRITICAL_SECTION_END();
+		return;
+	}
 
-    obj->Timestamp = obj->ReloadValue;
-    obj->IsStarted = true;
-    obj->IsNext2Expire = false;
+	obj->Timestamp = obj->ReloadValue;
+	obj->IsStarted = true;
+	obj->IsNext2Expire = false;
 
-    if (TimerListHead == NULL)
-    {
-        TimerInsertNewHeadTimer(obj);
-    }
-    else
-    {
-        if (obj->Timestamp < TimerListHead->Timestamp)
-        {
-            TimerInsertNewHeadTimer(obj);
-        }
-        else
-        {
-            TimerInsertTimer(obj);
-        }
-    }
-    CRITICAL_SECTION_END();
+	if (TimerListHead == NULL) {
+		TimerInsertNewHeadTimer(obj);
+	} else {
+		if (obj->Timestamp < TimerListHead->Timestamp) {
+			TimerInsertNewHeadTimer(obj);
+		} else {
+			TimerInsertTimer(obj);
+		}
+	}
+	CRITICAL_SECTION_END();
 }
 
 static void TimerInsertTimer(TimerEvent_t *obj)
 {
-    TimerEvent_t *cur = TimerListHead;
-    TimerEvent_t *next = TimerListHead->Next;
+	TimerEvent_t *cur = TimerListHead;
+	TimerEvent_t *next = TimerListHead->Next;
 
-    while (cur->Next != NULL)
-    {
-        if (obj->Timestamp > next->Timestamp)
-        {
-            cur = next;
-            next = next->Next;
-        }
-        else
-        {
-            cur->Next = obj;
-            obj->Next = next;
-            return;
-        }
-    }
-    cur->Next = obj;
-    obj->Next = NULL;
+	while (cur->Next != NULL) {
+		if (obj->Timestamp > next->Timestamp) {
+			cur = next;
+			next = next->Next;
+		} else {
+			cur->Next = obj;
+			obj->Next = next;
+			return;
+		}
+	}
+	cur->Next = obj;
+	obj->Next = NULL;
 }
 
 static void TimerInsertNewHeadTimer(TimerEvent_t *obj)
 {
-    TimerEvent_t *cur = TimerListHead;
+	TimerEvent_t *cur = TimerListHead;
 
-    if (cur != NULL)
-    {
-        cur->IsNext2Expire = false;
-    }
+	if (cur != NULL) {
+		cur->IsNext2Expire = false;
+	}
 
-    obj->Next = cur;
-    TimerListHead = obj;
-    TimerSetTimeout(TimerListHead);
+	obj->Next = cur;
+	TimerListHead = obj;
+	TimerSetTimeout(TimerListHead);
 }
 
 bool TimerIsStarted(TimerEvent_t *obj)
 {
-    return obj->IsStarted;
+	return obj->IsStarted;
 }
 
 void TimerIrqHandler(void)
 {
-    TimerEvent_t *cur;
-    TimerEvent_t *next;
+	TimerEvent_t *cur;
+	TimerEvent_t *next;
 
-    uint32_t old = TimerBackupValue;
-    uint32_t now = RtcGetTimerValue();
-    uint32_t deltaContext = now - old; // intentional wrap around
+	uint32_t old = TimerBackupValue;
+	uint32_t now = RtcGetTimerValue();
+	uint32_t deltaContext = now - old; // intentional wrap around
 
-    // Update timeStamp based upon new Time Reference
-    // because delta context should never exceed 2^32
-    if (TimerListHead != NULL)
-    {
-        for (cur = TimerListHead; cur->Next != NULL; cur = cur->Next)
-        {
-            next = cur->Next;
-            if (next->Timestamp > deltaContext)
-            {
-                next->Timestamp -= deltaContext;
-            }
-            else
-            {
-                next->Timestamp = 0;
-            }
-        }
-    }
+	// Update timeStamp based upon new Time Reference
+	// because delta context should never exceed 2^32
+	if (TimerListHead != NULL) {
+		for (cur = TimerListHead; cur->Next != NULL; cur = cur->Next) {
+			next = cur->Next;
+			if (next->Timestamp > deltaContext) {
+				next->Timestamp -= deltaContext;
+			} else {
+				next->Timestamp = 0;
+			}
+		}
+	}
 
-    // Execute immediately the alarm callback
-    if (TimerListHead != NULL)
-    {
-        cur = TimerListHead;
-        TimerListHead = TimerListHead->Next;
-        cur->IsStarted = false;
-        ExecuteCallBack(cur->Callback, cur->Context);
-    }
+	// Execute immediately the alarm callback
+	if (TimerListHead != NULL) {
+		cur = TimerListHead;
+		TimerListHead = TimerListHead->Next;
+		cur->IsStarted = false;
+		ExecuteCallBack(cur->Callback, cur->Context);
+	}
 
-    // Remove all the expired object from the list
-    while ((TimerListHead != NULL) && (TimerListHead->Timestamp == 0))
-    {
-        cur = TimerListHead;
-        TimerListHead = TimerListHead->Next;
-        cur->IsStarted = false;
-        ExecuteCallBack(cur->Callback, cur->Context);
-    }
+	// Remove all the expired object from the list
+	while ((TimerListHead != NULL) && (TimerListHead->Timestamp == 0)) {
+		cur = TimerListHead;
+		TimerListHead = TimerListHead->Next;
+		cur->IsStarted = false;
+		ExecuteCallBack(cur->Callback, cur->Context);
+	}
 
-    // Start the next TimerListHead if it exists AND NOT running
-    if ((TimerListHead != NULL) && (TimerListHead->IsNext2Expire == false))
-    {
-        TimerSetTimeout(TimerListHead);
-    }
+	// Start the next TimerListHead if it exists AND NOT running
+	if ((TimerListHead != NULL) && (TimerListHead->IsNext2Expire == false)) {
+		TimerSetTimeout(TimerListHead);
+	}
 }
 
 void TimerStop(TimerEvent_t *obj)
 {
-    CRITICAL_SECTION_BEGIN();
+	CRITICAL_SECTION_BEGIN();
 
-    TimerEvent_t *prev = TimerListHead;
-    TimerEvent_t *cur = TimerListHead;
+	TimerEvent_t *prev = TimerListHead;
+	TimerEvent_t *cur = TimerListHead;
 
-    // List is empty or the obj to stop does not exist
-    if ((TimerListHead == NULL) || (obj == NULL))
-    {
-        CRITICAL_SECTION_END();
-        return;
-    }
+	// List is empty or the obj to stop does not exist
+	if ((TimerListHead == NULL) || (obj == NULL)) {
+		CRITICAL_SECTION_END();
+		return;
+	}
 
-    obj->IsStarted = false;
+	obj->IsStarted = false;
 
-    if (TimerListHead == obj) // Stop the Head
-    {
-        if (TimerListHead->IsNext2Expire == true) // The head is already running
-        {
-            TimerListHead->IsNext2Expire = false;
-            if (TimerListHead->Next != NULL)
-            {
-                TimerListHead = TimerListHead->Next;
-                TimerSetTimeout(TimerListHead);
-            }
-            else
-            {
-                RtcStopAlarm();
-                TimerListHead = NULL;
-            }
-        }
-        else // Stop the head before it is started
-        {
-            if (TimerListHead->Next != NULL)
-            {
-                TimerListHead = TimerListHead->Next;
-            }
-            else
-            {
-                TimerListHead = NULL;
-            }
-        }
-    }
-    else // Stop an object within the list
-    {
-        while (cur != NULL)
-        {
-            if (cur == obj)
-            {
-                if (cur->Next != NULL)
-                {
-                    cur = cur->Next;
-                    prev->Next = cur;
-                }
-                else
-                {
-                    cur = NULL;
-                    prev->Next = cur;
-                }
-                break;
-            }
-            else
-            {
-                prev = cur;
-                cur = cur->Next;
-            }
-        }
-    }
-    CRITICAL_SECTION_END();
+	if (TimerListHead == obj) {                             // Stop the Head
+		if (TimerListHead->IsNext2Expire == true) {     // The head is already running
+			TimerListHead->IsNext2Expire = false;
+			if (TimerListHead->Next != NULL) {
+				TimerListHead = TimerListHead->Next;
+				TimerSetTimeout(TimerListHead);
+			} else {
+				RtcStopAlarm();
+				TimerListHead = NULL;
+			}
+		} else { // Stop the head before it is started
+			if (TimerListHead->Next != NULL) {
+				TimerListHead = TimerListHead->Next;
+			} else {
+				TimerListHead = NULL;
+			}
+		}
+	} else { // Stop an object within the list
+		while (cur != NULL) {
+			if (cur == obj) {
+				if (cur->Next != NULL) {
+					cur = cur->Next;
+					prev->Next = cur;
+				} else {
+					cur = NULL;
+					prev->Next = cur;
+				}
+				break;
+			} else {
+				prev = cur;
+				cur = cur->Next;
+			}
+		}
+	}
+	CRITICAL_SECTION_END();
 }
 
 static bool TimerExists(TimerEvent_t *obj)
 {
-    TimerEvent_t *cur = TimerListHead;
+	TimerEvent_t *cur = TimerListHead;
 
-    while (cur != NULL)
-    {
-        if (cur == obj)
-        {
-            return true;
-        }
-        cur = cur->Next;
-    }
-    return false;
+	while (cur != NULL) {
+		if (cur == obj) {
+			return true;
+		}
+		cur = cur->Next;
+	}
+	return false;
 }
 
 void TimerReset(TimerEvent_t *obj)
 {
-    TimerStop(obj);
-    TimerStart(obj);
+	TimerStop(obj);
+	TimerStart(obj);
 }
 
 void TimerSetValue(TimerEvent_t *obj, uint32_t value)
 {
-    uint32_t minValue = 0;
-    uint32_t ticks = RtcMs2Tick(value);
+	uint32_t minValue = 0;
+	uint32_t ticks = RtcMs2Tick(value);
 
-    TimerStop(obj);
+	TimerStop(obj);
 
-    minValue = RtcGetMinimumTimeout();
+	minValue = RtcGetMinimumTimeout();
 
-    if (ticks < minValue)
-    {
-        ticks = minValue;
-    }
+	if (ticks < minValue) {
+		ticks = minValue;
+	}
 
-    obj->Timestamp = ticks;
-    obj->ReloadValue = ticks;
+	obj->Timestamp = ticks;
+	obj->ReloadValue = ticks;
 }
 
 TimerTime_t TimerGetCurrentTime(void)
 {
-    uint32_t now = RtcGetTimerValue();
-    return RtcTick2Ms(now);
+	uint32_t now = RtcGetTimerValue();
+
+	return RtcTick2Ms(now);
 }
 
 TimerTime_t TimerGetElapsedTime(TimerTime_t past)
 {
-    if (past == 0)
-    {
-        return 0;
-    }
-    uint32_t nowInTicks = RtcGetTimerValue();
-    uint32_t pastInTicks = RtcMs2Tick(past);
+	if (past == 0) {
+		return 0;
+	}
+	uint32_t nowInTicks = RtcGetTimerValue();
+	uint32_t pastInTicks = RtcMs2Tick(past);
 
-    // Intentional wrap around. Works Ok if tick duration below 1ms
-    return RtcTick2Ms(nowInTicks - pastInTicks);
+	// Intentional wrap around. Works Ok if tick duration below 1ms
+	return RtcTick2Ms(nowInTicks - pastInTicks);
 }
 
 static void TimerSetTimeout(TimerEvent_t *obj)
 {
-    int32_t minTicks = RtcGetMinimumTimeout();
-    obj->IsNext2Expire = true;
+	int32_t minTicks = RtcGetMinimumTimeout();
 
-    // In case deadline too soon
-    if (obj->Timestamp < minTicks)
-    {
-        obj->Timestamp = minTicks;
-    }
+	obj->IsNext2Expire = true;
 
-    TimerBackupValue = RtcGetTimerValue();
-    RtcSetAlarm(obj->Timestamp);
+	// In case deadline too soon
+	if (obj->Timestamp < minTicks) {
+		obj->Timestamp = minTicks;
+	}
+
+	TimerBackupValue = RtcGetTimerValue();
+	RtcSetAlarm(obj->Timestamp);
 }
