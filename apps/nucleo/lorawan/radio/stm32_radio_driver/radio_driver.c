@@ -32,8 +32,8 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "radio_driver.h" 
-#include "radio_conf.h"
-#include "mw_log_conf.h"
+#include "radio_config.h"
+#include "log_config.h"
 
 /* External variables ---------------------------------------------------------*/
 /*!

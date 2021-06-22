@@ -12,7 +12,7 @@ if IPM_STM32_IPCC2
 	config IPM_STM32_IPCC2_PROCID
     	int "STM32 IPCC Processor ID"
         default 1
-        range 1 3
+        range 1 2
         help
 			use to define the Processor ID for IPCC access
 endif

@@ -143,7 +143,7 @@ extern "C"
 #include "systime.h"
 #include "radio.h"
 #include "LoRaMacTypes.h"
-#include "lorawan_conf.h"
+#include "mac_config.h"
 
 /*!
  * Maximum number of times the MAC layer tries to get an acknowledge.

@@ -30,7 +30,7 @@
  */
 #include <math.h>
 #include "RegionCommon.h"
-#include "mw_log_conf.h"
+#include "log_config.h"
 
 #define BACKOFF_DC_1_HOUR                   100
 #define BACKOFF_DC_10_HOURS                 1000

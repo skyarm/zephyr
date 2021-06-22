@@ -16,11 +16,6 @@ list(APPEND ZEPHYR_EXTRA_MODULES
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(nucleo)
 
-add_subdirectory(lorawan/sysdep)
-add_subdirectory(lorawan/crypto)
-add_subdirectory(lorawan/radio)
-add_subdirectory(lorawan/mac)
-add_subdirectory(lorawan/lmh)
+add_subdirectory(lorawan)
 
 target_sources(app PRIVATE sources/main.c)
-target_sources(app PRIVATE sources/network.c)

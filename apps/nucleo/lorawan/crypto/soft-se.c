@@ -45,12 +45,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "lorawan_conf.h"  /* LORAWAN_KMS */
+#include "mac_config.h"  /* LORAWAN_KMS */
 #include "radio.h"         /* needed for Random */
 #include "utilities.h"
 #include "LoRaMacHeaderTypes.h"
 #include "secure-element.h"
-#include "se-identity.h"
+#include "crypto_config.h"
 
 #if (!defined (LORAWAN_KMS) || (LORAWAN_KMS == 0))
 #include "lorawan_aes.h"

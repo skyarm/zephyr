@@ -14,11 +14,11 @@
 		}
 	],
 	"settings": {
-		"C_Cpp.default.systemIncludePath": [
-			"/usr/local/arm-none-eabi/include"
-		],
+		//"C_Cpp.default.systemIncludePath": [
+		//	"/usr/local/arm-none-eabi/include"
+		//],
 		"C_Cpp.default.includePath": [
-			"/usr/local/lib/gcc/arm-none-eabi/10.2.1/include",
+			//"/usr/local/lib/gcc/arm-none-eabi/10.2.1/include",
 			"/usr/local/src/zephyros/zephyr/include",
 			"/usr/local/src/zephyros/zephyr/include/arch",
 			"/usr/local/src/zephyros/zephyr/include/arch/arm/aarch32",

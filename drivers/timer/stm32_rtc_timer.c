@@ -93,10 +93,7 @@ static void rtc_timer_alarm_isr(const struct device *unused)
 {
 	ARG_UNUSED(unused);
 
-	k_spinlock_key_t key = k_spin_lock(&rtc_timer_lock);
-
 	if (LL_RTC_IsActiveFlag_ALRA(RTC) == 0) {
-		k_spin_unlock(&rtc_timer_lock, key);
 		return;
 	}
 	LL_RTC_ClearFlag_ALRA(RTC);
@@ -109,13 +106,13 @@ static void rtc_timer_alarm_isr(const struct device *unused)
 
 	rtc_timer_backup = current;
 
-	k_spin_unlock(&rtc_timer_lock, key);
-
 	sys_clock_announce(elapsed);
 }
 
 static void rtc_timer_set_alarm(uint32_t ticks)
 {
+	k_spinlock_key_t key = k_spin_lock(&rtc_timer_lock);
+
 	/* Disable RTC writing protection */
 	LL_RTC_DisableWriteProtection(RTC);
 
@@ -125,7 +122,7 @@ static void rtc_timer_set_alarm(uint32_t ticks)
 	LL_RTC_ClearFlag_ALRA(RTC);
 
 	/* Set alarm subsecond and mask */
-	LL_RTC_WriteReg(RTC, ALRMASSR, RTC_ALARMSUBSECONDBINMASK_NONE);
+	RTC->ALRMASSR = RTC_ALARMSUBSECONDBINMASK_NONE;
 	LL_RTC_ALMA_SetSubSecond(RTC, ticks);
 
 	/* Enable alarm and interrupt again */
@@ -137,6 +134,8 @@ static void rtc_timer_set_alarm(uint32_t ticks)
 
 	/* Enable EXTI IT, Let me wake up from low power mode */
 	LL_EXTI_EnableIT_0_31(RTC_TIMER_EXTI_LINE);
+
+	k_spin_unlock(&rtc_timer_lock, key);
 }
 
 static const struct stm32_pclken rtc_clock_pclken = {
@@ -179,7 +178,6 @@ int sys_clock_driver_init(const struct device *dev)
 #endif
 
 	LL_RCC_EnableRTC();
-
 	/* turn on RTC bus clock */
 	const struct device *rcc_dev = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
 	if (clock_control_on(rcc_dev, (clock_control_subsys_t *)&rtc_clock_pclken) !=
@@ -197,7 +195,7 @@ int sys_clock_driver_init(const struct device *dev)
 	LL_RTC_SetOutputPolarity(RTC, LL_RTC_OUTPUTPOLARITY_PIN_HIGH);
 	LL_RTC_DisableTamperOutput(RTC);
 
-	LL_RTC_WriteReg(RTC, PRER, (RTC_TIMER_PREDIV_A << RTC_PRER_PREDIV_A_Pos));
+	RTC->PRER = RTC_TIMER_PREDIV_A << RTC_PRER_PREDIV_A_Pos;
 	/* Configure the Binary mode */
 	LL_RTC_SetBinaryMode(RTC, RTC_BINARY_ONLY);
 
@@ -251,14 +249,14 @@ void sys_clock_set_timeout(int32_t ticks, bool idle)
 			return;
 		}
 	}
+	k_spin_unlock(&rtc_timer_lock, key);
+
 	/* Set ticks minimum value if ticks is less than minimum */
 	if ((uint32_t)ticks < RTC_TIMER_MINIMUM_VALUE) {
 		timeout = current - RTC_TIMER_MINIMUM_VALUE;
 	}
 
 	rtc_timer_set_alarm(timeout);
-
-	k_spin_unlock(&rtc_timer_lock, key);
 }
 
 uint32_t sys_clock_elapsed(void)

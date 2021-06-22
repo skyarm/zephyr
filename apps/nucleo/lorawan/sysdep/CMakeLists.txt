@@ -10,5 +10,4 @@ zephyr_sources(
   rtctime.c
   utilities.c
   subghz.c
-  lora_info.c
 )

@@ -57,7 +57,7 @@
 #include "LoRaMacSerializer.h"
 
 #include "LoRaMac.h"
-#include "mw_log_conf.h"
+#include "log_config.h"
 #include <stdio.h>
 
 /* Private macro -------------------------------------------------------------*/
