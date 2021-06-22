@@ -1,0 +1,32 @@
+# Copyright (c) 2018 Foundries.io Ltd
+# Copyright (c) 2019 STMicroelectronics
+# Copyright (c) 2021 Skyarm Technologies
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig STM32_RTC_TIMER
+        bool "STM32 RTC Timer"
+        depends on (SOC_SERIES_STM32L4X || SOC_SERIES_STM32L5X \
+                || SOC_SERIES_STM32WBX || SOC_SERIES_STM32WLX)
+        depends on CLOCK_CONTROL
+        select TICKLESS_CAPABLE
+        help
+          This module implements a kernel device driver for the accurate and 
+          low power wakeup timer, and provides the standard "system clock driver" 
+          interfaces.
+	
+if STM32_RTC_TIMER
+choice STM32_RTC_CLOCK
+        prompt "LPTIM clock value configuration"
+
+config STM32_RTC_CLOCK_LSE
+        bool "LSE clock"
+        help
+          Use LSE clock as RTC clock
+
+config STM32_RTC_CLOCK_LSI
+        bool "LSI clock"
+        help
+          Use LSI clock as RTC clock
+endchoice
+
+endif
