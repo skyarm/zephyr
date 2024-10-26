@@ -136,32 +136,66 @@ enum lorawan_node_activation_mode {
 	LORAWAN_NODE_ACTIVATION_OTAA    = 2,
 };
 
-enum lorawan_node_beacon_state {
-	LORAWAN_NODE_BEACON_ACQUISITION,
-	LORAWAN_NODE_BEACON_ACQUISITION_BY_TIME,
-	LORAWAN_NODE_BEACON_TIMEOUT,
-	LORAWAN_NODE_BEACON_BEACON_MISSED,
-	LORAWAN_NODE_BEACON_REACQUISITION,
-	LORAWAN_NODE_BEACON_LOCKED,
-	LORAWAN_NODE_BEACON_HALT,
-	LORAWAN_NODE_BEACON_IDLE,
-	LORAWAN_NODE_BEACON_GUARD,
-	LORAWAN_NODE_BEACON_RX,
-	LORAWAN_NODE_BEACON_LOST,
-};
-
 enum lorawan_node_status {
+	/*!
+     * Service started successfully
+     */
 	LORAWAN_NODE_STATUS_OK = 0,
+	/*!
+     * Service not started - LoRaMAC is busy
+     */
 	LORAWAN_NODE_STATUS_BUSY,
+	/*!
+     * Service unknown
+     */
 	LORAWAN_NODE_STATUS_SERVICE_UNKNOWN,
+	/*!
+     * Service not started - invalid parameter
+     */
 	LORAWAN_NODE_STATUS_PARAMETER_INVALID,
+	/*!
+     * Service not started - invalid frequency
+     */
 	LORAWAN_NODE_STATUS_FREQUENCY_INVALID,
+	/*!
+     * Service not started - invalid datarate
+     */
 	LORAWAN_NODE_STATUS_DATARATE_INVALID,
+	/*!
+     * Service not started - invalid frequency and datarate
+     */
 	LORAWAN_NODE_STATUS_FREQ_AND_DR_INVALID,
+	/*!
+     * Service not started - the device is not in a LoRaWAN
+     */
 	LORAWAN_NODE_STATUS_NO_NETWORK_JOINED,
+	/*!
+     * Service not started - payload length error
+     */
 	LORAWAN_NODE_STATUS_LENGTH_ERROR,
+	/*!
+     * Service not started - the specified region is not supported
+     * or not activated with preprocessor definitions.
+     */
 	LORAWAN_NODE_STATUS_REGION_NOT_SUPPORTED,
+	/*!
+     * The application data was not transmitted
+     * because prioritized pending MAC commands had to be sent.
+     */
 	LORAWAN_NODE_STATUS_SKIPPED_APP_DATA,
+	/*!
+     * An MCPS or MLME request can return this status. In this case,
+     * the MAC cannot send the frame, as the duty cycle limits all
+     * available bands. When a request returns this value, the
+     * variable "DutyCycleWaitTime" in "ReqReturn" of the input
+     * parameters contains the remaining time to wait. If the
+     * value is constant and does not change, the expected time
+     * on air for this frame is exceeding the maximum permitted
+     * time according to the duty cycle time period, defined
+     * in Region.h, DUTY_CYCLE_TIME_PERIOD. By default this time
+     * is 1 hour, and a band with 1% duty cycle is then allowed
+     * to use an air time of 36 seconds.
+     */
 	LORAWAN_NODE_STATUS_DUTYCYCLE_RESTRICTED,
 	LORAWAN_NODE_STATUS_NO_CHANNEL_FOUND,
 	LORAWAN_NODE_STATUS_NO_FREE_CHANNEL_FOUND,
@@ -188,7 +222,6 @@ enum lorawan_node_event_status {
 	LORAWAN_NODE_EVENT_STATUS_JOIN_FAIL,
 	LORAWAN_NODE_EVENT_STATUS_DOWNLINK_REPEATED,
 	LORAWAN_NODE_EVENT_STATUS_TX_DR_PAYLOAD_SIZE_ERROR,
-	LORAWAN_NODE_EVENT_STATUS_DOWNLINK_TOO_MANY_FRAMES_LOSS,
 	LORAWAN_NODE_EVENT_STATUS_ADDRESS_FAIL,
 	LORAWAN_NODE_EVENT_STATUS_MIC_FAIL,
 	LORAWAN_NODE_EVENT_STATUS_MULTICAST_FAIL,
@@ -262,7 +295,7 @@ struct lorawan_node_callbacks {
 	 * @brief Get the current temperature
 	 * @retval value  Temperature in degree Celsius
 	 */
-	uint16_t (*get_temperature)(void);
+	float (*get_temperature)(void);
 	/**
 	 * @brief    Will be called each time a Radio IRQ is handled by the MAC
 	 *          layer.
@@ -306,17 +339,73 @@ struct lorawan_node_callbacks {
  * @brief LoRaMac handler parameters
  */
 struct lorawan_node_config {
-	bool repeater_supported;
 	bool public_network;
 	enum lorawan_node_region active_region;
 	bool network_id;
 	bool adr_enabled;
 	int8_t tx_data_rate;
+	uint32_t device_address;
 	/**
 	 * Periodicity of the ping slots
 	 */
 	uint8_t ping_periodicity;
 	const struct lorawan_node_callbacks callbacks;
+};
+
+/**
+ * @brief LoRaWAN join parameters for over-the-Air activation (OTAA)
+ *
+ * Note that all of the fields use LoRaWAN 1.1 terminology.
+ *
+ * All parameters are optional if a secure element is present in which
+ * case the values stored in the secure element will be used instead.
+ */
+struct lorawan_node_join_otaa {
+	/** Join EUI */
+	uint8_t *join_eui;
+	/** Network Key */
+	uint8_t *nwk_key;
+	/** Application Key */
+	uint8_t *app_key;
+	/**
+	 * Device Nonce
+	 *
+	 * Starting with LoRaWAN 1.0.4 the DevNonce must be monotonically
+	 * increasing for each OTAA join with the same EUI. The DevNonce
+	 * should be stored in non-volatile memory by the application.
+	 */
+	uint16_t dev_nonce;
+};
+
+/**
+ * @brief LoRaWAN join parameters for activation by personalization (ABP)
+ */
+struct lorawan_node_join_abp {
+	/** Device address on the network */
+	uint32_t dev_addr;
+	/** Application session key */
+	uint8_t *app_skey;
+	/** Network session key */
+	uint8_t *nwk_skey;
+	/** Application EUI */
+	uint8_t *app_eui;
+};
+
+/**
+ * @brief LoRaWAN join parameters
+ */
+struct lorawan_node_join_config {
+	/** Join parameters */
+	union {
+		struct lorawan_node_join_otaa otaa; /**< OTAA join parameters */
+		struct lorawan_node_join_abp abp;   /**< ABP join parameters */
+	};
+
+	/** Device EUI. Optional if a secure element is present. */
+	uint8_t *dev_eui;
+
+	/** Activation mode */
+	enum lorawan_node_activation_mode mode;
 };
 
 /**
@@ -331,7 +420,7 @@ enum lorawan_node_status lorawan_node_init(const struct lorawan_node_config *con
  * @param [in] mode Activation mode (OTAA or ABP)
  * @retval LORAWAN_NODE_STATUS_OK: success, otherwise failed.
  */
-enum lorawan_node_status lorawan_node_join(enum lorawan_node_activation_mode mode);
+enum lorawan_node_status lorawan_node_join(const struct lorawan_node_join_config *join_cfg);
 
 /**
  * @brief Processes the LoRaMac and Radio events. When no pendig operation asks to go in low power mode.
@@ -347,8 +436,7 @@ void lorawan_node_process(void);
  * @param [in] allowDelayedTx when set to true, the frame will be delayed
  * @retval LORAWAN_NODE_STATUS_OK: success, otherwise failed.
  */
-enum lorawan_node_status lorawan_node_send(uint8_t port, const void *data, uint8_t size, bool tx_confirmed,
-					   bool allow_delayed);
+enum lorawan_node_status lorawan_node_send(uint8_t port, const void *data, uint8_t size, bool tx_confirmed);
 
 
 /**
@@ -430,13 +518,6 @@ uint8_t lorawan_node_get_ping_periodicity();
  * 3.Changed to Class B again
  */
 bool lorawan_node_set_ping_periodicity(uint8_t periodicity);
-
-/**
- * @brief Gets the current ClassB Beacon status
- * @retval beacon state
- */
-enum lorawan_node_beacon_state lorawan_node_get_beacon_state();
-
 /**
  * @brief Gets the LoRaWAN Device EUI (if OTAA)
  * @retval devEUI LoRaWAN DevEUI

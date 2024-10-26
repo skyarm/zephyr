@@ -8,48 +8,47 @@
  * @brief   LoRaMAC Layer handling definition
  ******************************************************************************
  */
-#include <logging/log.h>
-#include "secure-element.h"
-
-#include "lorawan_node.h"
+#include <zephyr/kernel.h>
+#include <zephyr/init.h>
+#include <errno.h>
+#include <string.h>
+#include <assert.h>
+#include <zephyr/lorawan/lorawan_node.h>
 
 #include <LoRaMac.h>
+#include <Region.h>
 #include <LoRaMacClassB.h>
-
-#include "Region.h"
-#include "crypto_config.h"
-
-#include "LoRaMacTest.h"
+#include <LoRaMacTest.h>
 
 static const struct lorawan_node_config *lorawan_node_config = NULL;
 
 struct lorawan_node_runtime {
-	bool duty_cycle_enabled;        /* ths parameter defined in region files */
-	uint32_t duty_cycle_time;       /* the next duty cycle time */
+	bool duty_cycle_enabled;  /* ths parameter defined in region files */
+	uint32_t duty_cycle_time; /* the next duty cycle time */
 	uint8_t ping_periodicity;
 	uint32_t device_address;
 	uint8_t device_eui[8];
 	uint8_t join_eui[8];
 	uint32_t supported_regions;
 	bool ctx_restore_done;
-#if (LORAMAC_CLASSB_ENABLED == 1)
+#if (CONFIG_LORAMAC_CLASSB_ENABLED == 1)
 	/*Indicates if a switch to Class B operation is pending or not. */
 	bool classb_pending;
-#endif /* LORAMAC_CLASSB_ENABLED == 1 */
+#endif /* CONFIG_LORAMAC_CLASSB_ENABLED == 1 */
 };
 
 static struct lorawan_node_runtime lorawan_node_runtime = {
-	.duty_cycle_enabled = false,    /* will be set in lorawan_node_init as region settings */
+	.duty_cycle_enabled = false, /* will be set in lorawan_node_init as region settings */
 	.duty_cycle_time = UINT32_MAX,
-	.ping_periodicity = 7,          /* to max ping periodicity */
+	.ping_periodicity = 7, /* to max ping periodicity */
 	.device_address = 0,
-	.device_eui = { 0 },
-	.join_eui = { 0 },
+	.device_eui = {0},
+	.join_eui = {0},
 	.supported_regions = 0,
 	.ctx_restore_done = false,
-#if (LORAMAC_CLASSB_ENABLED == 1)
+#if (CONFIG_LORAMAC_CLASSB_ENABLED == 1)
 	.classb_pending = false,
-#endif /* LORAMAC_CLASSB_ENABLED == 1 */
+#endif /* CONFIG_LORAMAC_CLASSB_ENABLED == 1 */
 };
 
 struct lorawan_node_mac_config {
@@ -59,9 +58,9 @@ struct lorawan_node_mac_config {
 	LoRaMacCallback_t callbacks;
 };
 
-static struct lorawan_node_mac_config lorawan_node_mac_config = { 0 };
+static struct lorawan_node_mac_config lorawan_node_mac_config = {0};
 
-#if (LORAMAC_CLASSB_ENABLED == 1)
+#if (CONFIG_LORAMAC_CLASSB_ENABLED == 1)
 static enum lorawan_node_status lorawan_node_beacon_req(void)
 {
 	MlmeReq_t mlme_req;
@@ -81,12 +80,12 @@ static enum lorawan_node_status lorawan_node_ping_slot_req(uint8_t periodicity)
 	status = LoRaMacMlmeRequest(&mlme_req);
 	if (status == LORAMAC_STATUS_OK) {
 		lorawan_node_runtime.ping_periodicity = periodicity;
-		return lorawan_node_send(0, NULL, 0, false, false);
+		return lorawan_node_send(0, NULL, 0, false);
 	} else {
 		return (enum lorawan_node_status)status;
 	}
 }
-#endif /* LORAMAC_CLASSB_ENABLED == 1 */
+#endif /* CONFIG_LORAMAC_CLASSB_ENABLED == 1 */
 
 static void lorawan_node_mcps_confirm(McpsConfirm_t *mcps_confirm)
 {
@@ -125,27 +124,27 @@ static void lorawan_node_mcps_indication(McpsIndication_t *mcps_indication)
 		cb_params.rx_slot = mcps_indication->RxSlot;
 
 		if (lorawan_node_config->callbacks.data_received) {
-			lorawan_node_config->callbacks.data_received(mcps_indication->Port,
-								     mcps_indication->Buffer, mcps_indication->BufferSize, &cb_params);
+			lorawan_node_config->callbacks.data_received(
+				mcps_indication->Port, mcps_indication->Buffer,
+				mcps_indication->BufferSize, &cb_params);
 		}
 	}
 
 	device_class = lorawan_node_get_current_class();
-	if ((mcps_indication->FramePending == true) && (device_class == CLASS_A)) {
+	if ((mcps_indication->IsUplinkTxPending) && (device_class == CLASS_A)) {
 		/**
 		 * *The server signals that it has pending data to be sent.
 		 * We schedule an uplink as soon as possible to flush the server.
 		 * Send an empty message
 		 */
-		lorawan_node_send(0, NULL, 0, false, true);
+		lorawan_node_send(0, NULL, 0, false);
 	}
 }
 
 static void lorawan_node_mlme_confirm(MlmeConfirm_t *mlme_confirm)
 {
 	switch (mlme_confirm->MlmeRequest) {
-	case MLME_JOIN:
-	{
+	case MLME_JOIN: {
 		struct lorawan_node_cb_join_request_params cb_params;
 		cb_params.mode = LORAWAN_NODE_ACTIVATION_OTAA;
 
@@ -159,31 +158,28 @@ static void lorawan_node_mlme_confirm(MlmeConfirm_t *mlme_confirm)
 		if (lorawan_node_config->callbacks.join_request) {
 			lorawan_node_config->callbacks.join_request(&cb_params);
 		}
-	}
-	break;
-	case MLME_LINK_CHECK:
-	{
+	} break;
+	case MLME_LINK_CHECK: {
 		/* Check DemodMargin */
 		/* Check NbGateways */
-	}
-	break;
-	case MLME_DEVICE_TIME:
-	{
-#if (LORAMAC_CLASSB_ENABLED == 1)
+	} break;
+	case MLME_DEVICE_TIME: {
+#if (CONFIG_LORAMAC_CLASSB_ENABLED == 1)
+		SysTime_t systime = SysTimeGet();
+		printf("Device Time seconds[%u], subseconds[%d].", systime.Seconds,
+		       systime.SubSeconds);
 		if (lorawan_node_runtime.classb_pending == true) {
-			lorawan_node_beacon_req();
+			//lorawan_node_beacon_req();
 		} else {
-			SysTime_t systime = SysTimeGet();
 			if (lorawan_node_config->callbacks.device_time) {
-				lorawan_node_config->callbacks.device_time(systime.Seconds, systime.SubSeconds);
+				lorawan_node_config->callbacks.device_time(systime.Seconds,
+									   systime.SubSeconds);
 			}
 		}
-#endif /* LORAMAC_CLASSB_ENABLED == 1 */
-	}
-	break;
-#if (LORAMAC_CLASSB_ENABLED == 1)
-	case MLME_BEACON_ACQUISITION:
-	{
+#endif /* CONFIG_LORAMAC_CLASSB_ENABLED == 1 */
+	} break;
+#if (CONFIG_LORAMAC_CLASSB_ENABLED == 1)
+	case MLME_BEACON_ACQUISITION: {
 		if (mlme_confirm->Status == LORAMAC_EVENT_INFO_STATUS_OK) {
 			/* Beacon has been acquired */
 			/* Request server for ping slot */
@@ -192,10 +188,8 @@ static void lorawan_node_mlme_confirm(MlmeConfirm_t *mlme_confirm)
 			/* Beacon not acquired, Request Device Time again. */
 			lorawan_node_device_time_req();
 		}
-	}
-	break;
-	case MLME_PING_SLOT_INFO:
-	{
+	} break;
+	case MLME_PING_SLOT_INFO: {
 		if (mlme_confirm->Status == LORAMAC_EVENT_INFO_STATUS_OK) {
 			MibRequestConfirm_t mibReq;
 
@@ -212,9 +206,8 @@ static void lorawan_node_mlme_confirm(MlmeConfirm_t *mlme_confirm)
 		} else {
 			lorawan_node_ping_slot_req(lorawan_node_runtime.ping_periodicity);
 		}
-	}
-	break;
-#endif /* LORAMAC_CLASSB_ENABLED == 1 */
+	} break;
+#endif /* CONFIG_LORAMAC_CLASSB_ENABLED == 1 */
 	default:
 		break;
 	}
@@ -225,9 +218,8 @@ static void lorawan_node_mlme_indication(MlmeIndication_t *mlme_indication)
 	struct lorawan_node_cb_beacon_status_params cb_params;
 
 	switch (mlme_indication->MlmeIndication) {
-#if (LORAMAC_CLASSB_ENABLED == 1)
-	case MLME_BEACON_LOST:
-	{
+#if (CONFIG_LORAMAC_CLASSB_ENABLED == 1)
+	case MLME_BEACON_LOST: {
 		MibRequestConfirm_t mib_req;
 		/* Switch to class A again */
 		mib_req.Type = MIB_DEVICE_CLASS;
@@ -246,10 +238,8 @@ static void lorawan_node_mlme_indication(MlmeIndication_t *mlme_indication)
 		}
 
 		lorawan_node_device_time_req();
-	}
-	break;
-	case MLME_BEACON:
-	{
+	} break;
+	case MLME_BEACON: {
 		cb_params.status = (enum lorawan_node_event_status)mlme_indication->Status;
 		cb_params.time = mlme_indication->BeaconInfo.Time.Seconds;
 		cb_params.freq = mlme_indication->BeaconInfo.Frequency;
@@ -263,13 +253,13 @@ static void lorawan_node_mlme_indication(MlmeIndication_t *mlme_indication)
 		}
 		break;
 	}
-#endif /* LORAMAC_CLASSB_ENABLED == 1 */
+#endif /* CONFIG_LORAMAC_CLASSB_ENABLED == 1 */
 	default:
 		break;
 	}
 }
 
-static void lorawan_node_nvm_ctx_event(LoRaMacNvmCtxModule_t module)
+static void lorawan_node_nvm_data_change(uint16_t notifyFlags)
 {
 }
 
@@ -303,7 +293,7 @@ enum lorawan_node_status lorawan_node_init(const struct lorawan_node_config *con
 	lorawan_node_mac_config.primitives.MacMcpsIndication = lorawan_node_mcps_indication;
 	lorawan_node_mac_config.primitives.MacMlmeConfirm = lorawan_node_mlme_confirm;
 	lorawan_node_mac_config.primitives.MacMlmeIndication = lorawan_node_mlme_indication;
-	lorawan_node_mac_config.callbacks.NvmContextChange = lorawan_node_nvm_ctx_event;
+	lorawan_node_mac_config.callbacks.NvmDataChange = lorawan_node_nvm_data_change;
 	lorawan_node_mac_config.callbacks.GetBatteryLevel = config->callbacks.get_battery_level;
 	lorawan_node_mac_config.callbacks.GetTemperatureLevel = config->callbacks.get_temperature;
 	lorawan_node_mac_config.callbacks.MacProcessNotify = config->callbacks.mac_process;
@@ -311,50 +301,45 @@ enum lorawan_node_status lorawan_node_init(const struct lorawan_node_config *con
 	/**
 	 * Initial runtime data
 	 */
-#if (STATIC_DEVICE_ADDRESS == 1)
-	lorawan_node_runtime.device_address = LORAWAN_DEVICE_ADDRESS;
-#else
-	lorawan_node_runtime.device_address = GetDevAddr();
-#endif /* STATIC_DEVICE_ADDRESS != 1 */
-
+	lorawan_node_runtime.device_address = lorawan_node_config->device_address;
 	lorawan_node_runtime.duty_cycle_time = k_uptime_get_32();
 
 	assert(config->ping_periodicity <= 7); /* ping periodicity must be 0 to 7 */
 	lorawan_node_runtime.ping_periodicity = config->ping_periodicity;
 
-#if (LORAMAC_CLASSB_ENABLED == 1)
+#if (CONFIG_LORAMAC_CLASSB_ENABLED == 1)
 	lorawan_node_runtime.classb_pending = false;
-#endif /* LORAMAC_CLASSB_ENABLED == 1 */
+#endif /* CONFIG_LORAMAC_CLASSB_ENABLED == 1 */
 	lorawan_node_runtime.ctx_restore_done = false;
 
-#ifdef  REGION_AS923
+#ifdef CONFIG_LORAMAC_REGION_AS923
 	lorawan_node_runtime.supported_regions |= (1 << LORAMAC_REGION_AS923);
 #endif /* REGION_AS923 */
-#ifdef  REGION_AU915
+#ifdef CONFIG_LORAMAC_REGION_AU915
 	lorawan_node_runtime.supported_regions |= (1 << LORAMAC_REGION_AU915);
 #endif /* REGION_AU915 */
-#ifdef  REGION_CN470
+#ifdef CONFIG_LORAMAC_REGION_CN470
 	lorawan_node_runtime.supported_regions |= (1 << LORAMAC_REGION_CN470);
 #endif /* REGION_CN470 */
-#ifdef  REGION_CN779
+#ifdef CONFIG_LORAMAC_REGION_CN779
 	lorawan_node_runtime.supported_regions |= (1 << LORAMAC_REGION_CN779);
 #endif /* REGION_CN779 */
-#ifdef  REGION_EU433
+#ifdef CONFIG_LORAMAC_REGION_EU433
 	lorawan_node_runtime.supported_regions |= (1 << LORAMAC_REGION_EU433);
 #endif /* REGION_EU433 */
-#ifdef  REGION_EU868
+#ifdef CONFIG_LORAMAC_REGION_EU868
 	lorawan_node_runtime.supported_regions |= (1 << LORAMAC_REGION_EU868);
 #endif /* REGION_EU868 */
-#ifdef  REGION_KR920
+#ifdef CONFIG_LORAMAC_REGION_KR920
 	lorawan_node_runtime.supported_regions |= (1 << LORAMAC_REGION_KR920);
 #endif /* REGION_KR920 */
-#ifdef  REGION_IN865
+#ifdef CONFIG_LORAMAC_REGION_IN865
 	lorawan_node_runtime.supported_regions |= (1 << LORAMAC_REGION_IN865);
 #endif /* REGION_IN865 */
-#ifdef  REGION_US915
+#ifdef CONFIG_LORAMAC_REGION_US915
 	lorawan_node_runtime.supported_regions |= (1 << LORAMAC_REGION_US915);
 #endif /* REGION_US915 */
-#ifdef  REGION_RU864
+#ifdef CONFIG_LORAMAC_REGION_RU864
 	lorawan_node_runtime.supported_regions |= (1 << LORAMAC_REGION_RU864);
 #endif /* REGION_RU864 */
 
@@ -369,7 +354,8 @@ enum lorawan_node_status lorawan_node_init(const struct lorawan_node_config *con
 	LoRaMacStatus_t status;
 	if (0U != ((1 << (config->active_region)) & lorawan_node_runtime.supported_regions)) {
 		status = LoRaMacInitialization(&lorawan_node_mac_config.primitives,
-					       &lorawan_node_mac_config.callbacks, config->active_region);
+					       &lorawan_node_mac_config.callbacks,
+					       config->active_region);
 		if (status != LORAMAC_STATUS_OK) {
 			return (enum lorawan_node_status)status;
 		}
@@ -402,11 +388,6 @@ enum lorawan_node_status lorawan_node_init(const struct lorawan_node_config *con
 	status = LoRaMacMibSetRequestConfirm(&mib_req);
 	assert(status == LORAMAC_STATUS_OK);
 
-	mib_req.Type = MIB_REPEATER_SUPPORT;
-	mib_req.Param.EnableRepeaterSupport = config->repeater_supported;
-	status = LoRaMacMibSetRequestConfirm(&mib_req);
-	assert(status == LORAMAC_STATUS_OK);
-
 	mib_req.Type = MIB_ADR;
 	mib_req.Param.AdrEnable = config->adr_enabled;
 	status = LoRaMacMibSetRequestConfirm(&mib_req);
@@ -421,7 +402,7 @@ enum lorawan_node_status lorawan_node_init(const struct lorawan_node_config *con
 	PhyParam_t phy_param;
 	get_phy.Attribute = PHY_DUTY_CYCLE;
 	phy_param = RegionGetPhyParam(config->active_region, &get_phy);
-	lorawan_node_runtime.duty_cycle_enabled = (bool) phy_param.Value;
+	lorawan_node_runtime.duty_cycle_enabled = (bool)phy_param.Value;
 
 	/* override previous value if reconfigure new region */
 	LoRaMacTestSetDutyCycleOn(lorawan_node_runtime.duty_cycle_enabled);
@@ -435,23 +416,43 @@ enum lorawan_node_status lorawan_node_init(const struct lorawan_node_config *con
 	return LORAWAN_NODE_STATUS_OK;
 }
 
-enum lorawan_node_status lorawan_node_join(enum lorawan_node_activation_mode mode)
+enum lorawan_node_status lorawan_node_join(const struct lorawan_node_join_config *join_cfg)
 {
 	LoRaMacStatus_t status;
 	MibRequestConfirm_t mib_req;
 
 	assert(lorawan_node_config);
 
-	if (mode == LORAWAN_NODE_ACTIVATION_OTAA) {
+	if (join_cfg->mode == LORAWAN_NODE_ACTIVATION_OTAA) {
 		MlmeReq_t mlme_req;
 
 		status = LoRaMacStart();
-		if (status != LORAMAC_STATUS_OK) {
-			return (enum lorawan_node_status)status;
-		}
+		assert(status == LORAMAC_STATUS_OK);
+
+		mib_req.Type = MIB_DEV_EUI;
+		mib_req.Param.DevEui = join_cfg->dev_eui;
+		status = LoRaMacMibSetRequestConfirm(&mib_req);
+		assert(status == LORAMAC_STATUS_OK);
+
+		mib_req.Type = MIB_JOIN_EUI;
+		mib_req.Param.JoinEui = join_cfg->otaa.join_eui;
+		status = LoRaMacMibSetRequestConfirm(&mib_req);
+		assert(status == LORAMAC_STATUS_OK);
+
+		mib_req.Type = MIB_NWK_KEY;
+		mib_req.Param.NwkKey = join_cfg->otaa.nwk_key;
+		status = LoRaMacMibSetRequestConfirm(&mib_req);
+		assert(status == LORAMAC_STATUS_OK);
+
+		mib_req.Type = MIB_APP_KEY;
+		mib_req.Param.AppKey = join_cfg->otaa.app_key;
+		status = LoRaMacMibSetRequestConfirm(&mib_req);
+		assert(status == LORAMAC_STATUS_OK);
+
 		/* Starts the OTAA join procedure */
 		mlme_req.Type = MLME_JOIN;
 		mlme_req.Req.Join.Datarate = lorawan_node_config->tx_data_rate;
+		mlme_req.Req.Join.NetworkActivation = ACTIVATION_TYPE_OTAA;
 		status = LoRaMacMlmeRequest(&mlme_req);
 		assert(status == LORAMAC_STATUS_OK);
 
@@ -462,7 +463,8 @@ enum lorawan_node_status lorawan_node_join(enum lorawan_node_activation_mode mod
 			/* Tell the MAC layer which network server version are we connecting too. */
 			mib_req.Type = MIB_ABP_LORAWAN_VERSION;
 			mib_req.Param.AbpLrWanVersion.Value = LORAWAN_NODE_ABP_VERSION;
-			LoRaMacMibSetRequestConfirm(&mib_req);
+			status = LoRaMacMibSetRequestConfirm(&mib_req);
+			assert(status == LORAMAC_STATUS_OK);
 
 			mib_req.Type = MIB_NET_ID;
 			mib_req.Param.NetID = lorawan_node_config->network_id;
@@ -490,15 +492,12 @@ enum lorawan_node_status lorawan_node_join(enum lorawan_node_activation_mode mod
 		join_params.status = LORAMAC_EVENT_INFO_STATUS_OK;
 		join_params.data_rate = LORAWAN_NODE_DR_0;
 
-		if (lorawan_node_config->callbacks.join_request) {
-			lorawan_node_config->callbacks.join_request(&join_params);
-		}
 		return LORAWAN_NODE_STATUS_OK;
 	}
 }
 
 enum lorawan_node_status lorawan_node_send(uint8_t port, const void *data, uint8_t size,
-					   bool tx_confirmed, bool allow_delayed_tx)
+					   bool tx_confirmed)
 {
 	LoRaMacStatus_t status;
 	McpsReq_t mcps_req;
@@ -524,7 +523,7 @@ enum lorawan_node_status lorawan_node_send(uint8_t port, const void *data, uint8
 		mcps_req.Type = MCPS_UNCONFIRMED;
 		mcps_req.Req.Unconfirmed.fBuffer = NULL;
 		mcps_req.Req.Unconfirmed.fBufferSize = 0;
-		LoRaMacMcpsRequest(&mcps_req, allow_delayed_tx);
+		LoRaMacMcpsRequest(&mcps_req);
 		lorawan_node_runtime.duty_cycle_time = k_uptime_get_32();
 		lorawan_node_runtime.duty_cycle_time += mcps_req.ReqReturn.DutyCycleWaitTime;
 		return LORAWAN_NODE_STATUS_SKIPPED_APP_DATA;
@@ -536,9 +535,8 @@ enum lorawan_node_status lorawan_node_send(uint8_t port, const void *data, uint8
 			mcps_req.Type = MCPS_UNCONFIRMED;
 		} else {
 			mcps_req.Type = MCPS_CONFIRMED;
-			mcps_req.Req.Confirmed.NbTrials = 8;
 		}
-		status = LoRaMacMcpsRequest(&mcps_req, allow_delayed_tx);
+		status = LoRaMacMcpsRequest(&mcps_req);
 		lorawan_node_runtime.duty_cycle_time = k_uptime_get_32();
 		lorawan_node_runtime.duty_cycle_time += mcps_req.ReqReturn.DutyCycleWaitTime;
 		return (enum lorawan_node_status)status;
@@ -549,7 +547,7 @@ enum lorawan_node_status lorawan_node_request_class(enum lorawan_node_class new_
 {
 	LoRaMacStatus_t status;
 	MibRequestConfirm_t mib_req;
-	enum lorawan_node_class current_lass;
+	enum lorawan_node_class current_class;
 
 	assert(lorawan_node_config);
 
@@ -562,46 +560,43 @@ enum lorawan_node_status lorawan_node_request_class(enum lorawan_node_class new_
 	if (status != LORAMAC_STATUS_OK) {
 		return (enum lorawan_node_status)status;
 	}
-	current_lass = (enum lorawan_node_class)mib_req.Param.Class;
+	current_class = (enum lorawan_node_class)mib_req.Param.Class;
 
 	/* Attempt to switch only if class update */
-	if (current_lass != new_class) {
+	if (current_class != new_class) {
 		switch (new_class) {
-		case LORAWAN_NODE_CLASS_A:
-		{
-			if (current_lass != LORAWAN_NODE_CLASS_A) {
+		case LORAWAN_NODE_CLASS_A: {
+			if (current_class != LORAWAN_NODE_CLASS_A) {
 				mib_req.Param.Class = CLASS_A;
 				status = LoRaMacMibSetRequestConfirm(&mib_req);
 				if (status == LORAMAC_STATUS_OK) {
 					/* Switch is instantaneous */
 					if (lorawan_node_config->callbacks.class_changed) {
-						lorawan_node_config->callbacks.class_changed(LORAWAN_NODE_CLASS_A);
+						lorawan_node_config->callbacks.class_changed(
+							LORAWAN_NODE_CLASS_A);
 					}
 					return LORAWAN_NODE_STATUS_OK;
 				} else {
 					return (enum lorawan_node_status)status;
 				}
 			}
-		}
-		break;
-		case LORAWAN_NODE_CLASS_B:
-		{
-#if (LORAMAC_CLASSB_ENABLED == 1)
-			if (current_lass != LORAWAN_NODE_CLASS_A) {
+		} break;
+		case LORAWAN_NODE_CLASS_B: {
+#if (CONFIG_LORAMAC_CLASSB_ENABLED == 1)
+			if (current_class != LORAWAN_NODE_CLASS_A) {
 				return LORAWAN_NODE_STATUS_PARAMETER_INVALID;
 			} else {
 				/* Beacon must first be acquired */
 				lorawan_node_runtime.classb_pending = true;
-				return lorawan_node_device_time_req();
+
+				return lorawan_node_beacon_req();
 			}
-#else /* LORAMAC_CLASSB_ENABLED == 0 */
+#else  /* CONFIG_LORAMAC_CLASSB_ENABLED == 0 */
 			return LORAWAN_NODE_STATUS_PARAMETER_INVALID;
-#endif /* LORAMAC_CLASSB_ENABLED */
-		}
-		break;
-		case LORAWAN_NODE_CLASS_C:
-		{
-			if (current_lass != LORAWAN_NODE_CLASS_A) {
+#endif /* CONFIG_LORAMAC_CLASSB_ENABLED */
+		} break;
+		case LORAWAN_NODE_CLASS_C: {
+			if (current_class != LORAWAN_NODE_CLASS_A) {
 				return LORAWAN_NODE_STATUS_PARAMETER_INVALID;
 			} else {
 				/* Switch is instantaneous */
@@ -609,15 +604,15 @@ enum lorawan_node_status lorawan_node_request_class(enum lorawan_node_class new_
 				status = LoRaMacMibSetRequestConfirm(&mib_req);
 				if (status == LORAMAC_STATUS_OK) {
 					if (lorawan_node_config->callbacks.class_changed) {
-						lorawan_node_config->callbacks.class_changed(CLASS_C);
+						lorawan_node_config->callbacks.class_changed(
+							CLASS_C);
 					}
 					return LORAWAN_NODE_STATUS_OK;
 				} else {
 					return (enum lorawan_node_status)status;
 				}
 			}
-		}
-		break;
+		} break;
 		default:
 			return LORAWAN_NODE_STATUS_PARAMETER_INVALID;
 		}
@@ -640,7 +635,7 @@ enum lorawan_node_status lorawan_node_device_time_req(void)
 	mlme_req.Type = MLME_DEVICE_TIME;
 	status = LoRaMacMlmeRequest(&mlme_req);
 	if (status == LORAMAC_STATUS_OK) {
-		return lorawan_node_send(0, NULL, 0, false, false);
+		return lorawan_node_send(0, NULL, 0, false);
 	} else {
 		return (enum lorawan_node_status)status;
 	}
@@ -740,17 +735,17 @@ uint32_t lorawan_node_get_supported_regions()
 uint8_t lorawan_node_get_ping_periodicity()
 {
 	assert(lorawan_node_config);
-#if (LORAMAC_CLASSB_ENABLED == 1)
+#if (CONFIG_LORAMAC_CLASSB_ENABLED == 1)
 	return lorawan_node_runtime.ping_periodicity;
-#else /* LORAMAC_CLASSB_ENABLED == 0 */
+#else  /* CONFIG_LORAMAC_CLASSB_ENABLED == 0 */
 	return (uint8_t)-1;
-#endif /* LORAMAC_CLASSB_ENABLED */
+#endif /* CONFIG_LORAMAC_CLASSB_ENABLED */
 }
 
 bool lorawan_node_set_ping_periodicity(uint8_t periodicity)
 {
 	assert(lorawan_node_config);
-#if (LORAMAC_CLASSB_ENABLED == 1)
+#if (CONFIG_LORAMAC_CLASSB_ENABLED == 1)
 	enum lorawan_node_class current_class = lorawan_node_get_current_class();
 	if (lorawan_node_is_joined() == false) {
 		lorawan_node_runtime.ping_periodicity = periodicity;
@@ -762,30 +757,9 @@ bool lorawan_node_set_ping_periodicity(uint8_t periodicity)
 	} else {
 		return false;
 	}
-#else /* LORAMAC_CLASSB_ENABLED == 0 */
+#else  /* CONFIG_LORAMAC_CLASSB_ENABLED == 0 */
 	return false;
-#endif /* LORAMAC_CLASSB_ENABLED */
-}
-
-enum lorawan_node_beacon_state lorawan_node_get_beacon_state()
-{
-	assert(lorawan_node_config);
-#if (LORAMAC_CLASSB_ENABLED == 1)
-	LoRaMacStatus_t status;
-	MibRequestConfirm_t mibReq;
-	LoRaMacClassBNvmCtx_t *CtxClassB;
-
-	mibReq.Type = MIB_NVM_CTXS;
-	status = LoRaMacMibGetRequestConfirm(&mibReq);
-	assert(status == LORAMAC_STATUS_OK);
-
-	CtxClassB = (LoRaMacClassBNvmCtx_t *) mibReq.Param.Contexts->ClassBNvmCtx;
-	assert(CtxClassB != NULL);
-
-	return (enum lorawan_node_beacon_state)CtxClassB->BeaconCtx.BeaconState;
-#else /* LORAMAC_CLASSB_ENABLED == 0 */
-	return LORAWAN_NODE_BEACON_UNKNOWN;
-#endif /* LORAMAC_CLASSB_ENABLED */
+#endif /* CONFIG_LORAMAC_CLASSB_ENABLED */
 }
 
 uint8_t lorawan_node_get_tx_data_rate()
@@ -857,7 +831,7 @@ bool lorawan_node_set_dev_addr(uint32_t addr)
 #if (STATIC_DEVICE_ADDRESS != 1)
 	lorawan_node_runtime.device_address = addr;
 	return true;
-#else /* STATIC_DEVICE_ADDRESS == 1 */
+#else  /* STATIC_DEVICE_ADDRESS == 1 */
 	return false;
 #endif /* STATIC_DEVICE_ADDRESS */
 }
@@ -1006,4 +980,14 @@ uint32_t lorawan_node_get_accept_rx2_delay()
 	assert(status == LORAMAC_STATUS_OK);
 
 	return mibReq.Param.JoinAcceptDelay2;
+}
+
+void BoardGetUniqueId(uint8_t *id)
+{
+	/* Do not change the default value */
+}
+
+TimerTime_t RtcTempCompensation(TimerTime_t period, float temperature)
+{
+	return period;
 }
